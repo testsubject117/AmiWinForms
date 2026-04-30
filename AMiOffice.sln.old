@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.5.11709.299 stable
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "AMiOffice", "AMiOffice\AMiOffice.vbproj", "{7BBE91CF-EEEA-041F-1095-649F5CFD4472}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7BBE91CF-EEEA-041F-1095-649F5CFD4472}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7BBE91CF-EEEA-041F-1095-649F5CFD4472}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7BBE91CF-EEEA-041F-1095-649F5CFD4472}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7BBE91CF-EEEA-041F-1095-649F5CFD4472}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8B4A3DED-40DA-44E1-A811-1289788F644B}
+	EndGlobalSection
+EndGlobal
