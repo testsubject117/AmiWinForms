@@ -68,8 +68,9 @@ Public NotInheritable Class InvoiceChkReader
     Public Shared Function ReadRecord(path As String, invoiceNumber As Long) As InvoiceChkRecord
         Dim rec As New InvoiceChkRecord() With {.InvoiceNumber = invoiceNumber}
 
+        ' FILNUM = InvoiceNumber - 75000, and BASIC random-access record numbers are 1-based.
         Dim filNum As Long = invoiceNumber - InvoiceBase
-        If filNum < 0 Then Return rec
+        If filNum < 1 Then Return rec
 
         If Not File.Exists(path) Then Return rec
 
@@ -80,7 +81,7 @@ Public NotInheritable Class InvoiceChkReader
             Return rec
         End Try
 
-        Dim recordOffset As Long = filNum * RecordSize
+        Dim recordOffset As Long = (filNum - 1) * RecordSize
         If recordOffset + RecordSize > fileSize Then Return rec
 
         Try
