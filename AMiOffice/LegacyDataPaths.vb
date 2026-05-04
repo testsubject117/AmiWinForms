@@ -13,5 +13,6 @@ Public NotInheritable Class LegacyDataPaths
     Public Shared ReadOnly Property LedgerCur As String =
         Path.Combine(BaseDataDir, "LEDGER.CUR")
     Public Shared ReadOnly Property CheckInv As String = Path.Combine(BaseDataDir, "CHECK.INV")
+    Public Shared ReadOnly Property InvoiceChk As String = Path.Combine(BaseDataDir, "INVOICE.CHK")
     Public Shared ReadOnly Property OtherChk As String = Path.Combine(BaseDataDir, "OTHER.CHK")
 End Class
