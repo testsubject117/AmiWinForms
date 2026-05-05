@@ -65,7 +65,11 @@ Partial Public Class FormLedgerMenu
                                                            f.ShowDialog(Me)
                                                        End Using
                                                    End Sub)
-        AddMenuButton(p, "A", "Find Checks that don't balance.", Sub() NotYet("Find Checks that don't balance"))
+        AddMenuButton(p, "A", "Find Checks that don't balance.", Sub()
+                                                            Using f As New FormLedgerDoesntBalance()
+                                                                f.ShowDialog(Me)
+                                                            End Using
+                                                        End Sub)
         AddMenuButton(p, "S", "Sales Employee's checks", Sub() NotYet("Sales Employee's checks"))
     End Sub
 
