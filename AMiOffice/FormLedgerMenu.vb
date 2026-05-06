@@ -70,7 +70,11 @@ Partial Public Class FormLedgerMenu
                                                                 f.ShowDialog(Me)
                                                             End Using
                                                         End Sub)
-        AddMenuButton(p, "S", "Sales Employee's checks", Sub() NotYet("Sales Employee's checks"))
+        AddMenuButton(p, "S", "Sales Employee's checks", Sub()
+                                                             Using f As New FormSalesEmployeesChecksMenu()
+                                                                 f.ShowDialog(Me)
+                                                             End Using
+                                                         End Sub)
     End Sub
 
     Private Sub OpenViewChecksPromptFlow()
