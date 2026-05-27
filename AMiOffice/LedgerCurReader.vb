@@ -15,36 +15,30 @@ Public NotInheritable Class LedgerCurReader
             Return results
         End If
 
-        Dim lines As String() = File.ReadAllLines(path)
+        Dim rawLines As String() = File.ReadAllLines(path)
+        Dim normalized As New List(Of String)(rawLines.Length)
 
-        ' Collect non-null lines; skip truly blank lines.
-        ' Also strip DOS EOF marker (^Z / ChrW(26)) which can appear at end-of-file.
-        Dim cleaned As New List(Of String)(lines.Length)
-        For Each raw In lines
-            If raw Is Nothing Then Continue For
+        Dim i As Integer
+        For i = 0 To rawLines.Length - 1
+            Dim raw As String = rawLines(i)
 
-            ' Remove ^Z anywhere in the line (some legacy files include it at EOF).
-            Dim s As String = raw.Replace(ChrW(26), "").Trim()
-
-            If s = "" Then
-                ' skip truly blank lines (not a data line)
-                Continue For
+            If raw Is Nothing Then
+                normalized.Add("")
+            Else
+                normalized.Add(raw.Replace(ChrW(26), ""))
             End If
-
-            cleaned.Add(s)
         Next
 
-        ' Each entry is 6 lines
-        Dim i As Integer = 0
-        While i + 5 < cleaned.Count
-            Dim e As New LedgerEntry() With {
-                .Customer = Unquote(cleaned(i)),
-                .DateText = Unquote(cleaned(i + 1)),
-                .CheckNumber = Unquote(cleaned(i + 2)),
-                .InvoiceDiffText = Unquote(cleaned(i + 3)),
-                .Amount = ParseDecimal(cleaned(i + 4)),
-                .Reference = Unquote(cleaned(i + 5))
-            }
+        i = 0
+        While i + 5 < normalized.Count
+            Dim e As New LedgerEntry()
+            e.Customer = Unquote(normalized(i))
+            e.DateText = Unquote(normalized(i + 1))
+            e.CheckNumber = Unquote(normalized(i + 2))
+            e.InvoiceDiffText = Unquote(normalized(i + 3))
+            e.Amount = ParseDecimal(normalized(i + 4))
+            e.Reference = Unquote(normalized(i + 5))
+
             results.Add(e)
             i += 6
         End While
@@ -54,13 +48,13 @@ Public NotInheritable Class LedgerCurReader
 
     Private Shared Function Unquote(s As String) As String
         If s Is Nothing Then Return ""
+
+        s = s.Replace(ChrW(26), "")
         s = s.Trim()
 
-        ' Handle GW-BASIC style: "TEXT" or ""
         If s.Length >= 2 AndAlso
            s.StartsWith("""", StringComparison.Ordinal) AndAlso
            s.EndsWith("""", StringComparison.Ordinal) Then
-
             s = s.Substring(1, s.Length - 2)
         End If
 
@@ -69,6 +63,8 @@ Public NotInheritable Class LedgerCurReader
 
     Private Shared Function ParseDecimal(s As String) As Decimal
         If s Is Nothing Then Return 0D
+
+        s = s.Replace(ChrW(26), "")
         s = s.Trim()
 
         Dim d As Decimal

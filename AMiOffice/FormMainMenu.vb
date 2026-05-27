@@ -19,22 +19,18 @@ Partial Public Class FormMainMenu
 
         BuildMenu()
 
-
         _buildInfo = "   " & BuildInfo.DisplayVersion
         Me.Text = "Active Magnetic Inspection Main Menu Application   " & BuildInfo.DisplayVersion
-        ' Force the Show of a small window with version and build - 'MessageBox.Show(BuildInfo.DisplayVersion, "DisplayVersion")
 
         lblMainMenu.Text = "MAIN MENU"
         UpdateHeaderClock()
         tmrClock.Interval = 1000
         tmrClock.Start()
 
-        ' Force the version/date text to start as far left as possible in lblDateTime
         lblDateTime.TextAlign = ContentAlignment.MiddleLeft
-        lblDateTime.Padding = New Padding(0, 10, 0, 0)  ' remove right padding; keep top padding
+        lblDateTime.Padding = New Padding(0, 10, 0, 0)
         lblDateTime.Margin = New Padding(0)
 
-        ' IMPORTANT: run resize after layout is finalized
         Me.BeginInvoke(New Action(Sub()
                                       ResizeButtonsToPanel(flpLeft)
                                       ResizeButtonsToPanel(flpRight)
@@ -48,9 +44,11 @@ Partial Public Class FormMainMenu
     Private Sub flpRight_SizeChanged(sender As Object, e As EventArgs) Handles flpRight.SizeChanged
         ResizeButtonsToPanel(flpRight)
     End Sub
+
     Private Sub tmrClock_Tick(sender As Object, e As EventArgs) Handles tmrClock.Tick
         UpdateHeaderClock()
     End Sub
+
     Private Sub UpdateHeaderClock()
         Dim now As DateTime = DateTime.Now
 
@@ -59,11 +57,13 @@ Partial Public Class FormMainMenu
                        now.ToString("MM-dd-yyyy") & "          " &
                        now.ToString("hh:mm:ss tt")
     End Sub
+
     Private Sub BuildMenu()
         If flpLeft Is Nothing OrElse flpRight Is Nothing Then Return
 
         flpLeft.Controls.Clear()
         flpRight.Controls.Clear()
+
         ' Left column
         AddMenuButton(flpLeft, "A", "Shop Card Generator")
         AddMenuButton(flpLeft, "B", "Invoice Generator")
@@ -80,7 +80,7 @@ Partial Public Class FormMainMenu
         AddMenuButton(flpLeft, "M", "Quotation Form Generator")
         AddMenuButton(flpLeft, "N", "Rolodex")
 
-        ' Right column (removed: S, U, V, W, +, 5)
+        ' Right column
         AddMenuButton(flpRight, "O", "Copy Spec Index")
         AddMenuButton(flpRight, "P", "Entire Ledger Viewing")
         AddMenuButton(flpRight, "Q", "Word Processor")
@@ -89,7 +89,6 @@ Partial Public Class FormMainMenu
         AddMenuButton(flpRight, "X", "Typewriter Mode")
         AddMenuButton(flpRight, "Y", "Ed Dean's Personal Backup")
         AddMenuButton(flpRight, "Z", "Personal Calendar")
-
         AddMenuButton(flpRight, "1", "Mileage Tracking")
         AddMenuButton(flpRight, "2", "Product Purchasing")
         AddMenuButton(flpRight, "3", "Miscellaneous Menu")
@@ -107,7 +106,7 @@ Partial Public Class FormMainMenu
         lbl.Font = New Font(Me.Font, FontStyle.Bold)
         lbl.Text = text
         lbl.Margin = New Padding(3, 3, 3, 8)
-        lbl.Width = 1000 ' will be resized later
+        lbl.Width = 1000
         Return lbl
     End Function
 
@@ -122,18 +121,14 @@ Partial Public Class FormMainMenu
         btn.Tag = key
         btn.Margin = New Padding(3, 3, 3, 6)
 
-        ' Force black buttons with white text
         btn.UseVisualStyleBackColor = False
         btn.BackColor = Color.Black
         btn.ForeColor = Color.White
         btn.FlatStyle = FlatStyle.Flat
         btn.FlatAppearance.BorderColor = Color.DimGray
         btn.FlatAppearance.BorderSize = 1
-
-        ' Optional: nicer hover / click feedback
         btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(32, 32, 32)
         btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(64, 64, 64)
-
         btn.AutoEllipsis = True
 
         AddHandler btn.Click, Sub(sender, args) HandleMenuKey(CStr(btn.Tag))
@@ -151,9 +146,9 @@ Partial Public Class FormMainMenu
         If panel Is Nothing Then Return
 
         Dim targetWidth As Integer =
-        panel.ClientSize.Width -
-        panel.Padding.Left - panel.Padding.Right -
-        SystemInformation.VerticalScrollBarWidth - 6
+            panel.ClientSize.Width -
+            panel.Padding.Left - panel.Padding.Right -
+            SystemInformation.VerticalScrollBarWidth - 6
 
         If targetWidth < 150 Then targetWidth = 150
 
@@ -184,17 +179,31 @@ Partial Public Class FormMainMenu
         End If
 
         Select Case up
-            Case "A" : NotYet("Shop Card Generator")
-            Case "B" : NotYet("Invoice Generator")
+            Case "A"
+                NotYet("Shop Card Generator")
+
+            Case "B"
+                NotYet("Invoice Generator")
+
             Case "C"
                 Using f As New FormLedgerMenu()
                     f.ShowDialog(Me)
                 End Using
-            Case "D" : NotYet("View Sales Journal (SALES)")
-            Case "E" : NotYet("View Log Book (LOGBOOK)")
-            Case "F" : NotYet("Price List Program (plist)")
-            Case "G" : NotYet("Print/Void Invoices (BOOT)")
-            Case "H" : NotYet("Quick Message Flashing")
+
+            Case "D"
+                NotYet("View Sales Journal (SALES)")
+
+            Case "E"
+                NotYet("View Log Book (LOGBOOK)")
+
+            Case "F"
+                NotYet("Price List Program (plist)")
+
+            Case "G"
+                NotYet("Print/Void Invoices (BOOT)")
+
+            Case "H"
+                NotYet("Quick Message Flashing")
 
             Case "I"
                 Try
@@ -210,20 +219,44 @@ Partial Public Class FormMainMenu
                     Cursor = Cursors.Default
                 End Try
 
-            Case "J" : NotYet("Print Out Customers Actual Names (spool real names)")
-            Case "K" : NotYet("Cash Disbursements (BILL)")
-            Case "L" : NotYet("Business Expenses Account (password)")
-            Case "M" : NotYet("Quotation Form Generator (QUOTE)")
-            Case "N" : NotYet("Rolodex (PHONE)")
+            Case "J"
+                NotYet("Print Out Customers Actual Names (spool real names)")
 
-            Case "O" : NotYet("Copy Spec Index")
-            Case "P" : NotYet("Entire Ledger Viewing (ENTIRE)")
-            Case "Q" : NotYet("Word Processor")
-            Case "R" : NotYet("Find Word Processor Text")
+            Case "K"
+                NotYet("Cash Disbursements (BILL)")
 
-            Case "T" : NotYet("Change Date or Time")
-            Case "X" : NotYet("Typewriter Mode")
-            Case "Y" : NotYet("Ed Dean's Personal Backup")
+            Case "L"
+                NotYet("Business Expenses Account (password)")
+
+            Case "M"
+                NotYet("Quotation Form Generator (QUOTE)")
+
+            Case "N"
+                Using f As New FrmRolodexMenu()
+                    f.ShowDialog(Me)
+                End Using
+
+            Case "O"
+                NotYet("Copy Spec Index")
+
+            Case "P"
+                NotYet("Entire Ledger Viewing (ENTIRE)")
+
+            Case "Q"
+                NotYet("Word Processor")
+
+            Case "R"
+                NotYet("Find Word Processor Text")
+
+            Case "T"
+                NotYet("Change Date or Time")
+
+            Case "X"
+                NotYet("Typewriter Mode")
+
+            Case "Y"
+                NotYet("Ed Dean's Personal Backup")
+
             Case "Z"
                 Using f As New FormPersonalCalendar()
                     f.ShowDialog(Me)
@@ -233,11 +266,23 @@ Partial Public Class FormMainMenu
                 Using f As New FormMileageTracking()
                     f.ShowDialog(Me)
                 End Using
-            Case "2" : NotYet("Product Purchasing")
-            Case "3" : NotYet("Miscellaneous Menu")
-            Case "4" : NotYet("Add Entries to Log Book")
-            Case "6" : NotYet("Cadmium Cards")
-            Case "7" : NotYet("Emergency PAYROLL System")
+
+            Case "2"
+                NotYet("Product Purchasing")
+
+            Case "3"
+                Using f As New FormMiscMenu()
+                    f.ShowDialog(Me)
+                End Using
+
+            Case "4"
+                NotYet("Add Entries to Log Book")
+
+            Case "6"
+                NotYet("Cadmium Cards")
+
+            Case "7"
+                NotYet("Emergency PAYROLL System")
 
             Case "?"
                 Using f As New FormAbout()

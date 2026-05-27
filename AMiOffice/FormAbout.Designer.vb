@@ -1,4 +1,7 @@
-﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>
+﻿Imports System.Windows.Forms
+Imports System.Drawing
+
+<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>
 Partial Class FormAbout
     Inherits System.Windows.Forms.Form
 
@@ -25,7 +28,7 @@ Partial Class FormAbout
         Me.pnlBottom = New Panel()
         Me.btnOK = New Button()
 
-        CType(Me.picDeveloper, ComponentModel.ISupportInitialize).BeginInit()
+        CType(Me.picDeveloper, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.pnlBottom.SuspendLayout()
         Me.SuspendLayout()
 
@@ -131,7 +134,7 @@ Partial Class FormAbout
         Me.StartPosition = FormStartPosition.CenterParent
         Me.Text = "About"
 
-        CType(Me.picDeveloper, ComponentModel.ISupportInitialize).EndInit()
+        CType(Me.picDeveloper, System.ComponentModel.ISupportInitialize).EndInit()
         Me.pnlBottom.ResumeLayout(False)
         Me.ResumeLayout(False)
     End Sub

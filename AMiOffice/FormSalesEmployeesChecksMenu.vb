@@ -4,6 +4,7 @@ Option Explicit On
 Imports System
 Imports System.Drawing
 Imports System.IO
+Imports System.Windows.Forms
 
 Public Class FormSalesEmployeesChecksMenu
     Inherits DosMenuFormBase
@@ -36,9 +37,9 @@ Public Class FormSalesEmployeesChecksMenu
                                                                                               End Using
                                                                                           End Sub)
 
-        ' (B) Return to the already-open CHECKS menu (don't open another one)
+        ' (B) DOS behavior: close this submenu and return to the already-open CHECKS menu
         AddMenuButton(flpLeft, "B", "Make a check for an Employee.", Sub()
-                                                                         Me.DialogResult = System.Windows.Forms.DialogResult.OK
+                                                                         Me.DialogResult = DialogResult.OK
                                                                          Me.Close()
 
                                                                          If Me.Owner IsNot Nothing Then

@@ -2,6 +2,8 @@ Option Strict On
 Option Explicit On
 
 Imports System.Linq
+Imports System.Drawing
+Imports System.Windows.Forms
 Imports System.Text
 Imports System.Threading
 Imports System.Threading.Tasks
@@ -18,13 +20,24 @@ Public Class FormLedgerDoesntBalance
 
     Private cts As CancellationTokenSource
 
+    Private ReadOnly pnlHeader As New Panel()
+    Private ReadOnly lblHeaderTitle As New Label()
+    Private ReadOnly lblHeaderClock As New Label()
+    Private ReadOnly tmrClock As System.Windows.Forms.Timer = New System.Windows.Forms.Timer()
+
+    Private ReadOnly pnlCommands As New FlowLayoutPanel()
+    Private ReadOnly pnlStatus As New Panel()
+
     Private ReadOnly dgv As New DataGridView()
     Private ReadOnly btnRefresh As New Button()
     Private ReadOnly btnCancel As New Button()
     Private ReadOnly btnCopyRow As New Button()
     Private ReadOnly btnExportCsv As New Button()
+    Private ReadOnly btnClose As New Button()
     Private ReadOnly cboFilter As New ComboBox()
-    Private ReadOnly lblStatus As New Label()
+    Private ReadOnly lblFilter As New Label()
+    Private ReadOnly lblStatusTop As New Label()
+    Private ReadOnly lblStatusBottom As New Label()
 
     ' Keep the full results so we can filter/sort without re-running the report.
     Private allRows As List(Of BalanceRow) = New List(Of BalanceRow)()
@@ -36,43 +49,112 @@ Public Class FormLedgerDoesntBalance
         Width = 1200
         Height = 850
         StartPosition = FormStartPosition.CenterParent
+        BackColor = Color.FromArgb(34, 34, 34)
+        ForeColor = Color.Gainsboro
+        KeyPreview = True
 
         BuildUi()
+        UpdateClock()
 
-        ' Fire-and-forget startup load (keeps UI responsive)
+        tmrClock.Interval = 1000
+        AddHandler tmrClock.Tick, Sub() UpdateClock()
+        tmrClock.Start()
+
         FireAndForget(RunReportAsync())
     End Sub
 
+    Protected Overrides Sub OnFormClosed(e As FormClosedEventArgs)
+        If tmrClock IsNot Nothing Then
+            tmrClock.Stop()
+        End If
+
+        If cts IsNot Nothing Then
+            cts.Cancel()
+            cts.Dispose()
+            cts = Nothing
+        End If
+
+        MyBase.OnFormClosed(e)
+    End Sub
+
+    Protected Overrides Function ProcessCmdKey(ByRef msg As Message, keyData As Keys) As Boolean
+        If keyData = Keys.Escape Then
+            Close()
+            Return True
+        End If
+
+        Return MyBase.ProcessCmdKey(msg, keyData)
+    End Function
+
     Private Sub BuildUi()
-        Dim top As New FlowLayoutPanel() With {
-            .Dock = DockStyle.Top,
-            .Height = 44,
-            .Padding = New Padding(8),
-            .FlowDirection = FlowDirection.LeftToRight,
-            .WrapContents = False
-        }
+        SuspendLayout()
 
-        btnRefresh.Text = "Refresh"
-        btnRefresh.AutoSize = True
-        AddHandler btnRefresh.Click, AddressOf btnRefresh_Click
+        pnlHeader.Dock = DockStyle.Top
+        pnlHeader.Height = 100
+        pnlHeader.BackColor = Color.Black
+        pnlHeader.Padding = New Padding(18, 10, 18, 10)
 
-        btnCancel.Text = "Cancel"
-        btnCancel.AutoSize = True
+        lblHeaderTitle.AutoSize = False
+        lblHeaderTitle.Left = 18
+        lblHeaderTitle.Top = 8
+        lblHeaderTitle.Width = 420
+        lblHeaderTitle.Height = 70
+        UiTheme.ApplyDosTitleStyle(lblHeaderTitle)
+        lblHeaderTitle.Text = "CHECKS"
+
+        lblHeaderClock.AutoSize = False
+        lblHeaderClock.Anchor = AnchorStyles.Top Or AnchorStyles.Right
+        lblHeaderClock.Width = 420
+        lblHeaderClock.Height = 40
+        lblHeaderClock.Left = ClientSize.Width - lblHeaderClock.Width - 18
+        lblHeaderClock.Top = 22
+        lblHeaderClock.BackColor = Color.Black
+        lblHeaderClock.ForeColor = Color.Yellow
+        lblHeaderClock.Font = New Font("Segoe UI", 13.0F, FontStyle.Bold, GraphicsUnit.Point)
+        lblHeaderClock.TextAlign = ContentAlignment.MiddleRight
+
+        AddHandler pnlHeader.Resize,
+            Sub()
+                lblHeaderClock.Left = pnlHeader.ClientSize.Width - lblHeaderClock.Width - 18
+            End Sub
+
+        pnlHeader.Controls.Add(lblHeaderTitle)
+        pnlHeader.Controls.Add(lblHeaderClock)
+
+        pnlCommands.Dock = DockStyle.Top
+        pnlCommands.Height = 64
+        pnlCommands.Padding = New Padding(12, 10, 12, 8)
+        pnlCommands.FlowDirection = FlowDirection.LeftToRight
+        pnlCommands.WrapContents = False
+        pnlCommands.BackColor = Color.FromArgb(34, 34, 34)
+
+        StyleMenuButton(btnRefresh, "Refresh", 110)
+        StyleMenuButton(btnCancel, "Cancel", 110)
+        StyleMenuButton(btnCopyRow, "Copy Row", 120)
+        StyleMenuButton(btnExportCsv, "Export CSV", 130)
+        StyleMenuButton(btnClose, "(ESC) Close", 130)
+
         btnCancel.Enabled = False
-        AddHandler btnCancel.Click, AddressOf btnCancel_Click
-
-        btnCopyRow.Text = "Copy Row"
-        btnCopyRow.AutoSize = True
         btnCopyRow.Enabled = False
-        AddHandler btnCopyRow.Click, AddressOf btnCopyRow_Click
-
-        btnExportCsv.Text = "Export CSV"
-        btnExportCsv.AutoSize = True
         btnExportCsv.Enabled = False
+
+        AddHandler btnRefresh.Click, AddressOf btnRefresh_Click
+        AddHandler btnCancel.Click, AddressOf btnCancel_Click
+        AddHandler btnCopyRow.Click, AddressOf btnCopyRow_Click
         AddHandler btnExportCsv.Click, AddressOf btnExportCsv_Click
+        AddHandler btnClose.Click, Sub() Close()
+
+        lblFilter.AutoSize = True
+        lblFilter.Padding = New Padding(10, 9, 0, 0)
+        lblFilter.ForeColor = Color.Gainsboro
+        lblFilter.Font = New Font("Segoe UI", 10.0F, FontStyle.Bold, GraphicsUnit.Point)
+        lblFilter.Text = "Filter:"
 
         cboFilter.DropDownStyle = ComboBoxStyle.DropDownList
         cboFilter.Width = 220
+        cboFilter.Font = New Font("Segoe UI", 10.0F, FontStyle.Regular, GraphicsUnit.Point)
+        cboFilter.BackColor = Color.White
+        cboFilter.ForeColor = Color.Black
         cboFilter.Items.Clear()
         cboFilter.Items.Add(FilterMode.AllUnbalanced)
         cboFilter.Items.Add(FilterMode.NoMapping)
@@ -80,25 +162,76 @@ Public Class FormLedgerDoesntBalance
         cboFilter.SelectedIndex = 0
         AddHandler cboFilter.SelectedIndexChanged, AddressOf cboFilter_SelectedIndexChanged
 
-        lblStatus.AutoSize = True
-        lblStatus.Padding = New Padding(12, 10, 0, 0)
-        lblStatus.Text = ""
+        pnlStatus.Width = 250
+        pnlStatus.Height = 38
+        pnlStatus.Margin = New Padding(12, 0, 0, 0)
+        pnlStatus.Padding = New Padding(0)
+        pnlStatus.BackColor = Color.Transparent
 
-        top.Controls.Add(btnRefresh)
-        top.Controls.Add(btnCancel)
-        top.Controls.Add(btnCopyRow)
-        top.Controls.Add(btnExportCsv)
-        top.Controls.Add(New Label() With {.AutoSize = True, .Padding = New Padding(8, 10, 0, 0), .Text = "Filter:"})
-        top.Controls.Add(cboFilter)
-        top.Controls.Add(lblStatus)
+        lblStatusTop.AutoSize = False
+        lblStatusTop.Left = 0
+        lblStatusTop.Top = 0
+        lblStatusTop.Width = 250
+        lblStatusTop.Height = 18
+        lblStatusTop.Margin = New Padding(0)
+        lblStatusTop.ForeColor = Color.Gainsboro
+        lblStatusTop.Font = New Font("Segoe UI", 10.0F, FontStyle.Bold, GraphicsUnit.Point)
+        lblStatusTop.TextAlign = ContentAlignment.MiddleLeft
+        lblStatusTop.Text = ""
+
+        lblStatusBottom.AutoSize = False
+        lblStatusBottom.Left = 0
+        lblStatusBottom.Top = 18
+        lblStatusBottom.Width = 250
+        lblStatusBottom.Height = 16
+        lblStatusBottom.Margin = New Padding(0)
+        lblStatusBottom.ForeColor = Color.Gainsboro
+        lblStatusBottom.Font = New Font("Segoe UI", 9.0F, FontStyle.Regular, GraphicsUnit.Point)
+        lblStatusBottom.TextAlign = ContentAlignment.MiddleLeft
+        lblStatusBottom.Text = ""
+
+        pnlStatus.Controls.Add(lblStatusTop)
+        pnlStatus.Controls.Add(lblStatusBottom)
+
+        pnlCommands.Controls.Add(btnRefresh)
+        pnlCommands.Controls.Add(btnCancel)
+        pnlCommands.Controls.Add(btnCopyRow)
+        pnlCommands.Controls.Add(btnExportCsv)
+        pnlCommands.Controls.Add(btnClose)
+        pnlCommands.Controls.Add(lblFilter)
+        pnlCommands.Controls.Add(cboFilter)
+        pnlCommands.Controls.Add(pnlStatus)
 
         dgv.Dock = DockStyle.Fill
         dgv.ReadOnly = True
         dgv.AllowUserToAddRows = False
         dgv.AllowUserToDeleteRows = False
+        dgv.AllowUserToResizeRows = False
         dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect
         dgv.AutoGenerateColumns = False
         dgv.MultiSelect = False
+        dgv.BackgroundColor = Color.Black
+        dgv.BorderStyle = BorderStyle.None
+        dgv.GridColor = Color.DimGray
+        dgv.RowHeadersVisible = False
+        dgv.EnableHeadersVisualStyles = False
+        dgv.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single
+        dgv.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal
+        dgv.ColumnHeadersHeight = 34
+        dgv.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing
+        dgv.Font = New Font("Segoe UI", 10.0F, FontStyle.Regular, GraphicsUnit.Point)
+        dgv.DefaultCellStyle.Font = New Font("Segoe UI", 10.0F, FontStyle.Regular, GraphicsUnit.Point)
+        dgv.DefaultCellStyle.BackColor = Color.Black
+        dgv.DefaultCellStyle.ForeColor = Color.Gainsboro
+        dgv.DefaultCellStyle.SelectionBackColor = Color.FromArgb(45, 85, 140)
+        dgv.DefaultCellStyle.SelectionForeColor = Color.White
+        dgv.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(18, 18, 18)
+
+        dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.Black
+        dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.Gainsboro
+        dgv.ColumnHeadersDefaultCellStyle.SelectionBackColor = Color.Black
+        dgv.ColumnHeadersDefaultCellStyle.SelectionForeColor = Color.Gainsboro
+        dgv.ColumnHeadersDefaultCellStyle.Font = New Font("Segoe UI", 10.0F, FontStyle.Bold, GraphicsUnit.Point)
 
         AddHandler dgv.SelectionChanged, AddressOf dgv_SelectionChanged
         AddHandler dgv.RowPrePaint, AddressOf dgv_RowPrePaint
@@ -114,7 +247,26 @@ Public Class FormLedgerDoesntBalance
         dgv.Columns.Add(New DataGridViewTextBoxColumn() With {.HeaderText = "Note", .DataPropertyName = NameOf(BalanceRow.Note), .AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill})
 
         Controls.Add(dgv)
-        Controls.Add(top)
+        Controls.Add(pnlCommands)
+        Controls.Add(pnlHeader)
+
+        ResumeLayout()
+    End Sub
+
+    Private Sub StyleMenuButton(btn As Button, caption As String, width As Integer)
+        btn.Text = caption
+        btn.Width = width
+        btn.Height = 30
+        btn.Margin = New Padding(0, 0, 8, 0)
+        btn.FlatStyle = FlatStyle.Standard
+        btn.BackColor = Color.Silver
+        btn.ForeColor = Color.Black
+        btn.Font = New Font("Segoe UI", 10.0F, FontStyle.Bold, GraphicsUnit.Point)
+        btn.UseVisualStyleBackColor = True
+    End Sub
+
+    Private Sub UpdateClock()
+        lblHeaderClock.Text = DateTime.Now.ToString("dddd  MM-dd-yyyy      hh:mm:ss tt")
     End Sub
 
     Private Sub btnCancel_Click(sender As Object, e As EventArgs)
@@ -129,7 +281,6 @@ Public Class FormLedgerDoesntBalance
         Dim r As BalanceRow = TryCast(dgv.CurrentRow?.DataBoundItem, BalanceRow)
         If r Is Nothing Then Return
 
-        ' Tab-separated so it pastes cleanly into Excel.
         Dim text As String =
             r.Customer & vbTab &
             r.DateText & vbTab &
@@ -141,7 +292,8 @@ Public Class FormLedgerDoesntBalance
             r.Note
 
         Clipboard.SetText(text)
-        lblStatus.Text = "Copied selected row to clipboard."
+        lblStatusTop.Text = "Copied selected row to clipboard."
+        lblStatusBottom.Text = ""
     End Sub
 
     Private Sub btnExportCsv_Click(sender As Object, e As EventArgs)
@@ -175,7 +327,8 @@ Public Class FormLedgerDoesntBalance
                 Next
 
                 IO.File.WriteAllText(sfd.FileName, sb.ToString(), Encoding.UTF8)
-                lblStatus.Text = $"Exported {rows.Count:N0} row(s) to CSV."
+                lblStatusTop.Text = $"Exported {rows.Count:N0} row(s) to CSV."
+                lblStatusBottom.Text = ""
             Catch ex As Exception
                 MessageBox.Show(Me, ex.ToString(), ScreenTitle, MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try
@@ -195,27 +348,35 @@ Public Class FormLedgerDoesntBalance
         Dim data As BalanceRow = TryCast(row.DataBoundItem, BalanceRow)
         If data Is Nothing Then Return
 
-        ' Reset to default first.
         row.DefaultCellStyle.BackColor = dgv.DefaultCellStyle.BackColor
         row.DefaultCellStyle.ForeColor = dgv.DefaultCellStyle.ForeColor
         row.DefaultCellStyle.Font = dgv.DefaultCellStyle.Font
+        row.DefaultCellStyle.SelectionForeColor = Color.Black
 
         If data.IsNoMapping Then
-            row.DefaultCellStyle.BackColor = Color.LightGoldenrodYellow
-            row.DefaultCellStyle.Font = New Font(dgv.Font, FontStyle.Bold)
+            row.DefaultCellStyle.BackColor = Color.FromArgb(250, 245, 190)
+            row.DefaultCellStyle.ForeColor = Color.Black
+            row.DefaultCellStyle.SelectionBackColor = Color.FromArgb(253, 249, 205)
+            row.DefaultCellStyle.SelectionForeColor = Color.Black
+            row.DefaultCellStyle.Font = dgv.DefaultCellStyle.Font
             Return
         End If
 
         Dim absDelta As Decimal = Math.Abs(data.DeltaValue)
         If absDelta >= LargeDeltaSevere Then
-            row.DefaultCellStyle.BackColor = Color.MistyRose
+            row.DefaultCellStyle.BackColor = Color.FromArgb(249, 232, 236)
+            row.DefaultCellStyle.ForeColor = Color.Black
+            row.DefaultCellStyle.SelectionBackColor = Color.FromArgb(252, 238, 241)
+            row.DefaultCellStyle.SelectionForeColor = Color.Black
         ElseIf absDelta >= LargeDeltaWarn Then
-            row.DefaultCellStyle.BackColor = Color.LemonChiffon
+            row.DefaultCellStyle.BackColor = Color.FromArgb(252, 239, 242)
+            row.DefaultCellStyle.ForeColor = Color.Black
+            row.DefaultCellStyle.SelectionBackColor = Color.FromArgb(254, 244, 246)
+            row.DefaultCellStyle.SelectionForeColor = Color.Black
         End If
     End Sub
 
     Private Async Function RunReportAsync() As Task
-        ' Cancel any prior run (if one is in flight)
         If cts IsNot Nothing Then
             cts.Cancel()
             cts.Dispose()
@@ -229,8 +390,10 @@ Public Class FormLedgerDoesntBalance
         btnCancel.Enabled = True
         btnCopyRow.Enabled = False
         btnExportCsv.Enabled = False
+        btnClose.Enabled = False
         cboFilter.Enabled = False
-        lblStatus.Text = "Starting..."
+        lblStatusTop.Text = "Starting..."
+        lblStatusBottom.Text = ""
         dgv.DataSource = Nothing
         allRows = New List(Of BalanceRow)()
 
@@ -240,22 +403,26 @@ Public Class FormLedgerDoesntBalance
 
         If Not IO.File.Exists(ledgerPath) Then
             UiFileErrors.ShowMissingRequiredFile(Me, ScreenTitle, ledgerPath)
-            lblStatus.Text = "Missing LEDGER.CUR"
+            lblStatusTop.Text = "Missing LEDGER.CUR"
+            lblStatusBottom.Text = ""
             btnRefresh.Enabled = True
             btnCancel.Enabled = False
+            btnClose.Enabled = True
             cboFilter.Enabled = True
             Return
         End If
 
-        ' Progress: safely update UI from background thread.
         Dim progress As IProgress(Of ProgressInfo) =
             New Progress(Of ProgressInfo)(
                 Sub(p As ProgressInfo)
                     If token.IsCancellationRequested Then Return
+
+                    lblStatusTop.Text = p.Message
+
                     If p.Total > 0 Then
-                        lblStatus.Text = $"{p.Message}  ({p.Current:N0}/{p.Total:N0})"
+                        lblStatusBottom.Text = $"{p.Current:N0}/{p.Total:N0}"
                     Else
-                        lblStatus.Text = p.Message
+                        lblStatusBottom.Text = ""
                     End If
                 End Sub
             )
@@ -265,20 +432,24 @@ Public Class FormLedgerDoesntBalance
                 Await Task.Run(Function() ComputeRows(ledgerPath, checkInvPath, invoiceChkPath, token, progress), token)
 
             If token.IsCancellationRequested Then
-                lblStatus.Text = "Cancelled"
+                lblStatusTop.Text = "Cancelled"
+                lblStatusBottom.Text = ""
                 Return
             End If
 
             allRows = rows
             ApplyFilterAndBind()
         Catch ex As OperationCanceledException
-            lblStatus.Text = "Cancelled"
+            lblStatusTop.Text = "Cancelled"
+            lblStatusBottom.Text = ""
         Catch ex As Exception
-            lblStatus.Text = "Error running report"
+            lblStatusTop.Text = "Error running report"
+            lblStatusBottom.Text = ""
             MessageBox.Show(Me, ex.ToString(), ScreenTitle, MessageBoxButtons.OK, MessageBoxIcon.Error)
         Finally
             btnRefresh.Enabled = True
             btnCancel.Enabled = False
+            btnClose.Enabled = True
             cboFilter.Enabled = True
 
             Dim current As List(Of BalanceRow) = TryCast(dgv.DataSource, List(Of BalanceRow))
@@ -298,21 +469,17 @@ Public Class FormLedgerDoesntBalance
             Case FilterMode.DeltaOnly
                 filtered = filtered.Where(Function(r) Not r.IsNoMapping)
             Case Else
-                ' AllUnbalanced (no extra filter)
         End Select
 
-        ' Sort: biggest absolute delta first; keep "No mapping" at top.
         Dim sorted As List(Of BalanceRow) =
             filtered.OrderByDescending(Function(r) If(r.IsNoMapping, Decimal.MaxValue, Math.Abs(r.DeltaValue))).ToList()
 
         dgv.DataSource = sorted
 
-        Dim noMap As Integer = allRows.Where(Function(r) r.IsNoMapping).Count()
-        Dim deltaRows As Integer = allRows.Where(Function(r) Not r.IsNoMapping).Count()
-        Dim showing As Integer = sorted.Count
+        lblStatusTop.Text = "Report complete"
+        lblStatusBottom.Text = $"{allRows.Count:N0} checked"
 
-        lblStatus.Text = $"Showing: {showing:N0} | Total: {allRows.Count:N0} | No mapping: {noMap:N0} | Delta rows: {deltaRows:N0}"
-        btnExportCsv.Enabled = (showing > 0)
+        btnExportCsv.Enabled = (sorted.Count > 0)
         btnCopyRow.Enabled = (dgv.CurrentRow IsNot Nothing AndAlso dgv.CurrentRow.DataBoundItem IsNot Nothing)
     End Sub
 
@@ -327,13 +494,11 @@ Public Class FormLedgerDoesntBalance
         token.ThrowIfCancellationRequested()
         progress?.Report(New ProgressInfo("Loading ledger...", 0, 0))
 
-        ' Load ledger
         Dim ledger As List(Of LedgerEntry) = LedgerCurReader.ReadAll(ledgerPath)
         token.ThrowIfCancellationRequested()
 
         progress?.Report(New ProgressInfo("Loading CHECK.INV...", 0, 0))
 
-        ' Load CHECK.INV blocks (if missing, treat as no mapping for all)
         Dim invIndex As New Dictionary(Of String, List(Of Long))(StringComparer.OrdinalIgnoreCase)
         If IO.File.Exists(checkInvPath) Then
             Try
@@ -363,7 +528,7 @@ Public Class FormLedgerDoesntBalance
                     End If
                 Next
             Catch
-                ' Best-effort; keep what we have.
+                ' Best effort; keep what we have.
             End Try
         End If
 
@@ -371,9 +536,7 @@ Public Class FormLedgerDoesntBalance
 
         progress?.Report(New ProgressInfo("Computing rows...", 0, ledger.Count))
 
-        ' Cache invoice amounts to avoid re-reading INVOICE.CHK for duplicates
         Dim amtCache As New Dictionary(Of Long, Decimal)()
-
         Dim rows As New List(Of BalanceRow)()
 
         Dim idx As Integer = 0
@@ -423,7 +586,6 @@ Public Class FormLedgerDoesntBalance
                         sum += a
                         foundAny = True
                     Else
-                        ' Cache missing as 0 so we don't keep re-reading it
                         amtCache(invNo) = 0D
                     End If
                 End If
@@ -448,12 +610,14 @@ Public Class FormLedgerDoesntBalance
             End If
         Next
 
+        ' Final exact progress update so the live counter reaches the true final row count.
+        progress?.Report(New ProgressInfo("Computing rows...", ledger.Count, ledger.Count))
         progress?.Report(New ProgressInfo("Done.", ledger.Count, ledger.Count))
+
         Return rows
     End Function
 
     Private Shared Sub FireAndForget(t As Task)
-        ' Intentionally ignore the task. Observe exceptions to avoid UnobservedTaskException.
         If t Is Nothing Then Return
 
         t.ContinueWith(

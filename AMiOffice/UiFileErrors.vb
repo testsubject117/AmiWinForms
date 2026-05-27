@@ -1,6 +1,8 @@
 ﻿Option Strict On
 Option Explicit On
 
+Imports System.Windows.Forms
+
 Public Module UiFileErrors
 
     Public Sub ShowMissingRequiredFile(owner As IWin32Window, screenTitle As String, path As String)

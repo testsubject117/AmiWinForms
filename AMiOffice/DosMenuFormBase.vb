@@ -112,10 +112,11 @@ Public Class DosMenuFormBase
         AddHandler btnEscClose.Click, Sub() Me.Close()
         pnlBottom.Controls.Clear()
         pnlBottom.Controls.Add(btnEscClose)
-        AddHandler pnlBottom.Resize, Sub()
-                                         btnEscClose.Left = pnlBottom.ClientSize.Width - btnEscClose.Width
-                                         btnEscClose.Top = pnlBottom.ClientSize.Height - btnEscClose.Height
-                                     End Sub
+        AddHandler pnlBottom.Resize,
+            Sub()
+                btnEscClose.Left = pnlBottom.ClientSize.Width - btnEscClose.Width
+                btnEscClose.Top = pnlBottom.ClientSize.Height - btnEscClose.Height
+            End Sub
 
         ' Main content (header + body) fills above bottom bar
         Dim root As New TableLayoutPanel() With {
@@ -141,20 +142,17 @@ Public Class DosMenuFormBase
         header.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
 
         lblMainMenu.AutoSize = True
-        lblMainMenu.TextAlign = ContentAlignment.MiddleLeft
-        lblMainMenu.Font = New Font("Castellar", 36.0F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        lblMainMenu.ForeColor = Color.Yellow
-        lblMainMenu.BackColor = _bgBlack
         lblMainMenu.Margin = New Padding(0)
+        UiTheme.ApplyDosTitleStyle(lblMainMenu)
 
         lblDateTime.AutoSize = False
         lblDateTime.Dock = DockStyle.Fill
         lblDateTime.TextAlign = ContentAlignment.MiddleRight
-        lblDateTime.Font = New Font("Segoe UI", 12.0F, FontStyle.Bold, GraphicsUnit.Point) ' bold
+        lblDateTime.Font = New Font("Segoe UI", 12.0F, FontStyle.Bold, GraphicsUnit.Point)
         lblDateTime.ForeColor = Color.Yellow
         lblDateTime.BackColor = _bgBlack
         lblDateTime.Margin = New Padding(0)
-        lblDateTime.Padding = New Padding(0) ' moved up (no top padding)
+        lblDateTime.Padding = New Padding(0)
 
         header.Controls.Add(lblMainMenu, 0, 0)
         header.Controls.Add(lblDateTime, 1, 0)

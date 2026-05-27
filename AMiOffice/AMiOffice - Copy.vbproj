@@ -1,0 +1,128 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net10.0-windows</TargetFramework>
+		<StartupObject>AMiOffice.My.MyApplication</StartupObject>
+		<EnableNETAnalyzers>false</EnableNETAnalyzers>
+                <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+                <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
+                <AnalysisLevel>none</AnalysisLevel>
+		<Imports>System,System.Windows.Forms,System.Drawing</Imports>
+
+		<UseWindowsForms>true</UseWindowsForms>
+		<MyType>WindowsForms</MyType>
+
+		<AssemblyTitle>AMiOffice</AssemblyTitle>
+		<Product>AMiOffice</Product>
+		<Company>Kirk Saffell</Company>
+		<Description>AMiOffice Application</Description>
+
+		<Version>1.0.0</Version>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<BuildNumber Condition="'$(BuildNumber)'==''">0</BuildNumber>
+		<FileVersion>$(Version).$(BuildNumber)</FileVersion>
+		<ProductVersion>$(Version)</ProductVersion>
+		<InformationalVersion>$(Version) (Build $(BuildNumber))</InformationalVersion>
+
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+
+		<Copyright>Copyright Kirk Saffell 2026</Copyright>
+		<Title>AMiOfficeApplication</Title>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)'=='Release'">
+		<DebugType>portable</DebugType>
+		<DebugSymbols>true</DebugSymbols>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <Compile Remove="FormAddOtherCheck.vb" />
+	  <Compile Remove="FormDeleteOtherCheck.vb" />
+	  <Compile Remove="OtherChkWriter.vb" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Remove="FormAddOtherCheck.resx" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Update="FormAbout.Designer.vb">
+			<DependentUpon>FormAbout.vb</DependentUpon>
+		</Compile>
+		<EmbeddedResource Update="FormAbout.resx">
+			<DependentUpon>FormAbout.vb</DependentUpon>
+		</EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Remove="ESC Logo.jpg" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="ESC Logo.jpg">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Update="My Project\Application.Designer.vb">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Application.myapp</DependentUpon>
+		</Compile>
+
+		<Compile Update="My Project\Resources.Designer.vb">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Resources.resx</DependentUpon>
+		</Compile>
+
+		<Compile Update="My Project\Settings.Designer.vb">
+			<DesignTimeSharedInput>True</DesignTimeSharedInput>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Settings.settings</DependentUpon>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Update="My Project\Resources.resx">
+			<CustomToolNamespace>My.Resources</CustomToolNamespace>
+			<Generator>VbMyResourcesResXFileCodeGenerator</Generator>
+			<LastGenOutput>Resources.Designer.vb</LastGenOutput>
+		</EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="My Project\Application.myapp">
+			<Generator>MyApplicationCodeGenerator</Generator>
+			<LastGenOutput>Application.Designer.vb</LastGenOutput>
+		</None>
+
+		<None Update="My Project\Settings.settings">
+			<CustomToolNamespace>My</CustomToolNamespace>
+			<Generator>SettingsSingleFileGenerator</Generator>
+			<LastGenOutput>Settings.Designer.vb</LastGenOutput>
+		</None>
+	</ItemGroup>
+
+	<Target Name="IncrementBuildCounter" BeforeTargets="Publish">
+		<PropertyGroup>
+			<BuildCounterFile>$(MSBuildProjectDirectory)\build-counter.txt</BuildCounterFile>
+		</PropertyGroup>
+
+		<WriteLinesToFile Condition="!Exists('$(BuildCounterFile)')" File="$(BuildCounterFile)" Overwrite="true" Lines="0" />
+
+		<ReadLinesFromFile File="$(BuildCounterFile)">
+			<Output TaskParameter="Lines" ItemName="BuildCounterLines" />
+		</ReadLinesFromFile>
+
+		<PropertyGroup>
+			<BuildNumber>$([System.Int32]::Parse('%(BuildCounterLines.Identity)'))</BuildNumber>
+			<BuildNumber>$([MSBuild]::Add($(BuildNumber), 1))</BuildNumber>
+		</PropertyGroup>
+
+		<WriteLinesToFile File="$(BuildCounterFile)" Overwrite="true" Lines="$(BuildNumber)" />
+	</Target>
+
+</Project>
