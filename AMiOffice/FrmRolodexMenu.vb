@@ -23,7 +23,7 @@ Public Class FrmRolodexMenu
     Private txtInline As TextBox
 
     Public Sub New()
-        MyBase.New()
+        InitializeComponent()
         InitializeRolodexUi()
     End Sub
 

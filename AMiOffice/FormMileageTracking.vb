@@ -60,6 +60,11 @@ Public Class FormMileageTracking
         Me.KeyPreview = True
         Me.MinimumSize = New Size(1120, 720)
 
+        ' DOS base form styling
+        Me.BackColor = UiTheme.DosBackColor
+        Me.ForeColor = UiTheme.DosForeColor
+        Me.Font = UiTheme.CreateDosFont(12.0F)
+
         If Not EnsureDataDirExistsFriendly() Then
             Close()
             Return
@@ -80,14 +85,45 @@ Public Class FormMileageTracking
     Protected Overrides Sub OnKeyDown(e As KeyEventArgs)
         MyBase.OnKeyDown(e)
 
-        If e.Control AndAlso e.KeyCode = Keys.S Then
-            SaveAllToLegacyDat()
+        ' Keyboard-first commands (DOS-like)
+        If e.KeyCode = Keys.Escape Then
+            Close()
             e.Handled = True
             Return
         End If
 
-        If e.KeyCode = Keys.Escape Then
-            Close()
+        If e.KeyCode = Keys.Insert Then
+            If _btnAdd IsNot Nothing Then _btnAdd.PerformClick()
+            e.Handled = True
+            Return
+        End If
+
+        If e.KeyCode = Keys.Delete Then
+            If _btnDelete IsNot Nothing Then _btnDelete.PerformClick()
+            e.Handled = True
+            Return
+        End If
+
+        If e.Control AndAlso e.KeyCode = Keys.S Then
+            If _btnSave IsNot Nothing Then _btnSave.PerformClick()
+            e.Handled = True
+            Return
+        End If
+
+        If e.Control AndAlso e.KeyCode = Keys.R Then
+            If _btnReload IsNot Nothing Then _btnReload.PerformClick()
+            e.Handled = True
+            Return
+        End If
+
+        If e.Control AndAlso e.KeyCode = Keys.V Then
+            If _btnViewRange IsNot Nothing Then _btnViewRange.PerformClick()
+            e.Handled = True
+            Return
+        End If
+
+        If e.Control AndAlso e.KeyCode = Keys.P Then
+            If _btnPrint IsNot Nothing Then _btnPrint.PerformClick()
             e.Handled = True
             Return
         End If
@@ -146,7 +182,7 @@ Public Class FormMileageTracking
 
         Dim lblHeader As New Label() With {
             .AutoSize = True,
-            .Font = New Font("Segoe UI", 16.0F, FontStyle.Bold),
+            .Font = UiTheme.CreateDosFont(16.0F, FontStyle.Bold),
             .Text = "Mileage Tracking"
         }
 
@@ -200,32 +236,32 @@ Public Class FormMileageTracking
         row2.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
 
         _txtMiles = New TextBox() With {.Dock = DockStyle.Fill}
-        _lblMilesHint = New Label() With {.AutoSize = True, .Font = New Font("Segoe UI", 10.0F, FontStyle.Bold), .Text = "Miles: —", .Padding = New Padding(8, 7, 8, 7)}
+        _lblMilesHint = New Label() With {.AutoSize = True, .Font = UiTheme.CreateDosFont(12.0F, FontStyle.Bold), .Text = "Miles: —", .Padding = New Padding(8, 7, 8, 7)}
 
         _cmbPayment = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Dock = DockStyle.Fill}
         _cmbPayment.Items.Add("Cash")
         _cmbPayment.Items.Add("Charge")
         _cmbPayment.SelectedIndex = 0
 
-        _btnAdd = New Button() With {.Text = "Add", .AutoSize = True}
+        _btnAdd = New Button() With {.Text = "Add (Ins)", .AutoSize = True}
         AddHandler _btnAdd.Click, Sub() AddEntry()
 
-        _btnDelete = New Button() With {.Text = "Delete Selected", .AutoSize = True}
+        _btnDelete = New Button() With {.Text = "Delete (Del)", .AutoSize = True}
         AddHandler _btnDelete.Click, Sub() DeleteSelected()
 
         _btnSave = New Button() With {.Text = "Save (Ctrl+S)", .AutoSize = True}
         AddHandler _btnSave.Click, Sub() SaveAllToLegacyDat()
 
-        _btnReload = New Button() With {.Text = "Reload", .AutoSize = True}
+        _btnReload = New Button() With {.Text = "Reload (Ctrl+R)", .AutoSize = True}
         AddHandler _btnReload.Click, Sub() ReloadFromDisk()
 
-        _btnViewRange = New Button() With {.Text = "View Range…", .AutoSize = True}
+        _btnViewRange = New Button() With {.Text = "View Range (Ctrl+V)...", .AutoSize = True}
         AddHandler _btnViewRange.Click, Sub() ViewRangeBASICStyle()
 
-        _btnPrint = New Button() With {.Text = "Print Mileage…", .AutoSize = True}
+        _btnPrint = New Button() With {.Text = "Print Mileage (Ctrl+P)...", .AutoSize = True}
         AddHandler _btnPrint.Click, Sub() PrintMileageReport()
 
-        _btnClose = New Button() With {.Text = "(Esc) Close", .AutoSize = True}
+        _btnClose = New Button() With {.Text = "Close (Esc)", .AutoSize = True}
         AddHandler _btnClose.Click, Sub() Close()
 
         Dim btnPanel As New FlowLayoutPanel() With {.AutoSize = True, .FlowDirection = FlowDirection.LeftToRight, .WrapContents = False}
@@ -247,7 +283,7 @@ Public Class FormMileageTracking
 
         _grid = New DataGridView() With {
             .Dock = DockStyle.Fill,
-            .ReadOnly = False,
+            .ReadOnly = True,
             .AllowUserToAddRows = False,
             .AllowUserToDeleteRows = False,
             .SelectionMode = DataGridViewSelectionMode.FullRowSelect,
@@ -262,6 +298,9 @@ Public Class FormMileageTracking
 
         Controls.Clear()
         Controls.Add(root)
+
+        ' Apply DOS theme to everything we just built
+        UiTheme.ApplyDosTheme(Me)
     End Sub
 
     Private Sub BuildTable()
@@ -592,7 +631,7 @@ Public Class FormMileageTracking
 
         Dim lbl As New Label() With {
             .Dock = DockStyle.Fill,
-            .Font = New Font("Consolas", 11.0F, FontStyle.Regular),
+            .Font = UiTheme.CreateDosFont(11.0F, FontStyle.Regular),
             .AutoSize = False,
             .Padding = New Padding(12),
             .Text = ""
@@ -607,6 +646,9 @@ Public Class FormMileageTracking
 
         f.Controls.Add(lbl)
         f.Controls.Add(panel)
+
+        ' Apply DOS theme to modal viewer
+        UiTheme.ApplyDosTheme(f)
 
         Dim idx As Integer = 0
 

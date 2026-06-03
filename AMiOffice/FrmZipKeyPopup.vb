@@ -18,8 +18,7 @@ Public Class FrmZipKeyPopup
     Private _cityMode As Boolean = False
 
     Public Sub New()
-        MyBase.New()
-        InitializeRolodexUi()
+        InitializeComponent()
     End Sub
 
     Private Sub InitializeRolodexUi()

@@ -4,14 +4,14 @@ Option Explicit On
 Imports System
 Imports System.Collections.Generic
 Imports System.Drawing
+Imports System.Globalization
 Imports System.IO
+Imports System.Text
 Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
 Public Class FormLogBookMenu
     Inherits Form
-
-    Private Const DataDir As String = "\\invoice\mainmenu\data"
 
     Private ReadOnly _yearTwoDigit As Integer
 
@@ -26,6 +26,11 @@ Public Class FormLogBookMenu
         Menu
         ViewOneCustomerPrompt
         InvoiceLookupPrompt
+        PoLookupPrompt
+        LastDateOfBusinessPrompt
+        SpecOrPartScanPrompt
+        ErrorScanPrinterReadyPrompt
+        FindAnythingPrompt
     End Enum
 
     Public Sub New(yearTwoDigit As Integer)
@@ -54,7 +59,10 @@ Public Class FormLogBookMenu
             .WordWrap = False
         }
 
-        pnlPrompt = New Panel() With {.Visible = False, .BackColor = Color.Black}
+        pnlPrompt = New Panel() With {
+            .Visible = False,
+            .BackColor = Color.Black
+        }
 
         lblPrompt = New Label() With {
             .AutoSize = True,
@@ -85,24 +93,54 @@ Public Class FormLogBookMenu
         AddHandler Me.Shown, Sub() ShowMenu()
         AddHandler txtInput.KeyDown, AddressOf OnInputKeyDown
 
-        AddHandler Me.Resize, Sub()
-                                  If pnlPrompt.Visible Then PositionPromptOverlay()
-                              End Sub
+        AddHandler Me.Resize,
+            Sub()
+                If pnlPrompt.Visible Then PositionPromptOverlay()
+            End Sub
     End Sub
 
     Protected Overrides Function ProcessCmdKey(ByRef msg As Message, keyData As Keys) As Boolean
         If _mode = InputMode.Menu Then
             Select Case keyData
                 Case Keys.Escape
-                    Me.Close() : Return True
+                    Me.Close()
+                    Return True
+
                 Case Keys.D1, Keys.NumPad1
-                    BeginCustomerPrompt() : Return True
+                    BeginCustomerPrompt()
+                    Return True
+
                 Case Keys.D2, Keys.NumPad2
-                    RunViewAllCustomers() : Return True
+                    RunViewAllCustomers()
+                    Return True
+
                 Case Keys.D3, Keys.NumPad3
-                    BeginInvoiceLookupPrompt() : Return True
+                    BeginInvoiceLookupPrompt()
+                    Return True
+
+                Case Keys.D4, Keys.NumPad4
+                    BeginPoLookupPrompt()
+                    Return True
+
+                Case Keys.D5, Keys.NumPad5
+                    BeginLastDateOfBusinessPrompt()
+                    Return True
+
+                Case Keys.D6, Keys.NumPad6
+                    BeginSpecOrPartScanPrompt()
+                    Return True
+
+                Case Keys.D7, Keys.NumPad7
+                    BeginErrorScanPrinterReadyPrompt()
+                    Return True
+
+                Case Keys.D8, Keys.NumPad8
+                    BeginFindAnythingPrompt()
+                    Return True
+
                 Case Keys.Q
-                    Me.Close() : Return True
+                    Me.Close()
+                    Return True
             End Select
         End If
 
@@ -133,11 +171,14 @@ Public Class FormLogBookMenu
         sb.AppendLine("(5) Look up the last date of business for a customer")
         sb.AppendLine("(6) Scan Entire Logbook to find Customers with a certain Spec. or Part Number")
         sb.AppendLine("(7) Scan logbook for errors")
-        sb.AppendLine("(8) Scan 2026 Logbook to find ANYTHING")
+        sb.AppendLine($"(8) Scan 20{_yearTwoDigit:00} Logbook to find ANYTHING")
         sb.AppendLine("(Q) QUIT")
         sb.AppendLine()
 
-        If Not String.IsNullOrEmpty(promptLine) Then sb.AppendLine(promptLine)
+        If Not String.IsNullOrEmpty(promptLine) Then
+            sb.AppendLine(promptLine)
+        End If
+
         txtScreen.Text = sb.ToString()
     End Sub
 
@@ -169,6 +210,76 @@ Public Class FormLogBookMenu
         Me.BeginInvoke(New Action(Sub() txtInput.Clear()))
     End Sub
 
+    Private Sub BeginPoLookupPrompt()
+        _mode = InputMode.PoLookupPrompt
+        RenderMenu(promptLine:="P.O. NUMBER TO LOOK UP?")
+
+        lblPrompt.Text = "P.O. NUMBER TO LOOK UP? "
+        txtInput.Text = ""
+        pnlPrompt.Visible = True
+        PositionPromptOverlay()
+
+        pnlPrompt.BringToFront()
+        txtInput.Focus()
+        Me.BeginInvoke(New Action(Sub() txtInput.Clear()))
+    End Sub
+
+    Private Sub BeginLastDateOfBusinessPrompt()
+        _mode = InputMode.LastDateOfBusinessPrompt
+        RenderMenu(promptLine:="Enter Part or all of Customers abbreviation [ENTER = All Customers] ?")
+
+        lblPrompt.Text = "Enter Part or all of Customers abbreviation [ENTER = All Customers] ? "
+        txtInput.Text = ""
+        pnlPrompt.Visible = True
+        PositionPromptOverlay()
+
+        pnlPrompt.BringToFront()
+        txtInput.Focus()
+        Me.BeginInvoke(New Action(Sub() txtInput.Clear()))
+    End Sub
+
+    Private Sub BeginSpecOrPartScanPrompt()
+        _mode = InputMode.SpecOrPartScanPrompt
+        RenderMenu(promptLine:="Enter Part or all of the Spec to search for ")
+
+        lblPrompt.Text = "Enter Part or all of the Spec to search for "
+        txtInput.Text = ""
+        pnlPrompt.Visible = True
+        PositionPromptOverlay()
+
+        pnlPrompt.BringToFront()
+        txtInput.Focus()
+        Me.BeginInvoke(New Action(Sub() txtInput.Clear()))
+    End Sub
+
+    Private Sub BeginErrorScanPrinterReadyPrompt()
+        _mode = InputMode.ErrorScanPrinterReadyPrompt
+        RenderMenu(promptLine:="Get printer ready & hit [ENTER]")
+
+        lblPrompt.Text = "Get printer ready & hit [ENTER] "
+        txtInput.Text = ""
+        pnlPrompt.Visible = True
+        PositionPromptOverlay()
+
+        pnlPrompt.BringToFront()
+        txtInput.Focus()
+        Me.BeginInvoke(New Action(Sub() txtInput.Clear()))
+    End Sub
+
+    Private Sub BeginFindAnythingPrompt()
+        _mode = InputMode.FindAnythingPrompt
+        RenderMenu(promptLine:="While in red screen, hit [F3] to scan for the next match." & vbCrLf &
+                              "What do you want to look for")
+
+        lblPrompt.Text = "What do you want to look for "
+        txtInput.Text = ""
+        pnlPrompt.Visible = True
+        PositionPromptOverlay()
+
+        pnlPrompt.BringToFront()
+        txtInput.Focus()
+        Me.BeginInvoke(New Action(Sub() txtInput.Clear()))
+    End Sub
     Private Sub PositionPromptOverlay()
         Dim allLines As String() = txtScreen.Text.Split(New String() {vbCrLf}, StringSplitOptions.None)
 
@@ -192,9 +303,13 @@ Public Class FormLogBookMenu
         pnlPrompt.Width = txtScreen.ClientSize.Width - 4
         pnlPrompt.Height = lineH
 
-        lblPrompt.Left = 0 : lblPrompt.Top = 0
+        lblPrompt.Left = 0
+        lblPrompt.Top = 0
+
         Dim promptW As Integer = TextRenderer.MeasureText(lblPrompt.Text, lblPrompt.Font).Width
-        txtInput.Left = promptW : txtInput.Top = 0 : txtInput.Height = lineH
+        txtInput.Left = promptW
+        txtInput.Top = 0
+        txtInput.Height = lineH
         txtInput.Width = Math.Max(250, pnlPrompt.Width - txtInput.Left - 10)
     End Sub
 
@@ -215,8 +330,22 @@ Public Class FormLogBookMenu
                 RunViewOneCustomer(input)
 
             Case InputMode.InvoiceLookupPrompt
-                ' IMPORTANT: async so progress can display
                 Dim t As Task = RunInvoiceLookupAsync(input)
+
+            Case InputMode.PoLookupPrompt
+                RunPoLookup(input)
+
+            Case InputMode.LastDateOfBusinessPrompt
+                Dim t As Task = RunLastDateOfBusinessAsync(input)
+
+            Case InputMode.SpecOrPartScanPrompt
+                Dim t As Task = RunSpecOrPartScanAllYearsAsync(input)
+
+            Case InputMode.ErrorScanPrinterReadyPrompt
+                Dim t As Task = RunLogbookErrorScanAsync()
+
+            Case InputMode.FindAnythingPrompt
+                Dim t As Task = RunFindAnythingAsync(input)
 
             Case Else
                 ShowMenu()
@@ -231,19 +360,45 @@ Public Class FormLogBookMenu
             Return
         End If
 
-        Dim reader As New LogBookReader(DataDir)
-        Dim pages As List(Of String) = BuildPagesFromEntries(reader.ReadEntries(_yearTwoDigit),
-                                                        Function(entry) entry.Customer IsNot Nothing AndAlso entry.Customer.StartsWith(customerInput, StringComparison.OrdinalIgnoreCase),
-                                                        includeSource:=False)
+        Dim reader As New LogBookReader(AppPaths.DataDir)
+        Dim pages As List(Of String) = BuildPagesFromEntries(
+            reader.ReadEntries(_yearTwoDigit),
+            Function(entry) entry.Customer IsNot Nothing AndAlso entry.Customer.StartsWith(customerInput, StringComparison.OrdinalIgnoreCase),
+            includeSource:=False)
 
         ShowPagesOrEnd(pages)
     End Sub
 
     Private Sub RunViewAllCustomers()
-        Dim reader As New LogBookReader(DataDir)
-        Dim pages As List(Of String) = BuildPagesFromEntries(reader.ReadEntries(_yearTwoDigit),
-                                                        Function(entry) True,
-                                                        includeSource:=False)
+        Dim reader As New LogBookReader(AppPaths.DataDir)
+        Dim pages As List(Of String) = BuildPagesFromEntries(
+            reader.ReadEntries(_yearTwoDigit),
+            Function(entry) True,
+            includeSource:=False)
+
+        ShowPagesOrEnd(pages)
+    End Sub
+
+    Private Sub RunPoLookup(poInput As String)
+        If String.IsNullOrWhiteSpace(poInput) Then
+            ShowMenu()
+            Return
+        End If
+
+        Dim poSearch As String = poInput.Trim()
+
+        Dim reader As New LogBookReader(AppPaths.DataDir)
+        Dim pages As List(Of String) = BuildPagesFromEntries(
+            reader.ReadEntries(_yearTwoDigit),
+            Function(entry)
+                If entry Is Nothing Then Return False
+
+                Dim poValue As String = entry.PONumber
+                If poValue Is Nothing Then Return False
+
+                Return poValue.IndexOf(poSearch, StringComparison.OrdinalIgnoreCase) >= 0
+            End Function,
+            includeSource:=False)
 
         ShowPagesOrEnd(pages)
     End Sub
@@ -265,9 +420,8 @@ Public Class FormLogBookMenu
             Return
         End If
 
-        Dim reader As New LogBookReader(DataDir)
+        Dim reader As New LogBookReader(AppPaths.DataDir)
 
-        ' Search selected year first
         Dim yearPages As List(Of String) = BuildPagesFromEntries(
             reader.ReadEntries(_yearTwoDigit),
             Function(entry) entry.InvoiceNumber.HasValue AndAlso entry.InvoiceNumber.Value = invoiceNum,
@@ -290,7 +444,6 @@ Public Class FormLogBookMenu
             Return
         End If
 
-        ' Show status viewer immediately
         Dim status As New FrmDosPagedViewer()
         status.Text = "LOG BOOK"
         status.BeginStatusMode("[ESC = Quit]")
@@ -298,10 +451,9 @@ Public Class FormLogBookMenu
         status.Show(Me)
         status.BringToFront()
 
-        Dim files As String()
+        Dim files As List(Of String)
         Try
-            files = Directory.GetFiles(DataDir, "LOGBOOK.*", SearchOption.TopDirectoryOnly)
-            Array.Sort(files, StringComparer.OrdinalIgnoreCase)
+            files = GetLogbookDataFilesInFileNameOrder()
         Catch ex As Exception
             status.UpdateStatus("ERROR:" & vbCrLf & ex.Message & vbCrLf & vbCrLf & "HIT [ESC] to Quit")
             Return
@@ -311,18 +463,17 @@ Public Class FormLogBookMenu
             Await Task.Run(Function()
                                Dim m As New List(Of LogBookEntry)()
 
-                               For i As Integer = 0 To files.Length - 1
-                                   Dim fp = files(i)
-                                   Dim fileName = Path.GetFileName(fp)
+                               For i As Integer = 0 To files.Count - 1
+                                   Dim fp As String = files(i)
+                                   Dim fileName As String = Path.GetFileName(fp)
 
-                                   ' UI update (safe because UpdateStatus marshals to UI thread)
                                    status.UpdateStatus(
                                        "SEARCHING ALL YEARS..." & vbCrLf &
-                                       $"SCANNING: {fileName}  ({i + 1}/{files.Length})" & vbCrLf & vbCrLf &
+                                       $"SCANNING: {fileName}  ({i + 1}/{files.Count})" & vbCrLf & vbCrLf &
                                        "PLEASE WAIT...")
 
                                    For Each entry In reader.ReadEntriesFromSpecificFile(fp)
-                                       If entry.InvoiceNumber.HasValue AndAlso entry.InvoiceNumber.Value = invoiceNum Then
+                                       If entry IsNot Nothing AndAlso entry.InvoiceNumber.HasValue AndAlso entry.InvoiceNumber.Value = invoiceNum Then
                                            m.Add(entry)
                                        End If
                                    Next
@@ -333,14 +484,15 @@ Public Class FormLogBookMenu
 
         status.EndStatusMode()
 
-        Dim pages As List(Of String) = BuildPagesFromEntries(
-            matches,
-            Function(entry) True,
-            includeSource:=True)
+        Dim pages As List(Of String) = BuildPagesFromEntries(matches, Function(entry) True, includeSource:=True)
 
         If pages.Count = 0 Then
             status.SetSinglePage($"INVOICE {invoiceNum} NOT FOUND IN ANY YEAR." & vbCrLf & vbCrLf &
                                  "HIT [ESC] to Quit")
+            status.ShowDialog(Me)
+            status.Close()
+            status.Dispose()
+            ShowMenu()
             Return
         End If
 
@@ -352,9 +504,427 @@ Public Class FormLogBookMenu
         ShowMenu()
     End Function
 
-    ' -----------------------------
-    ' Helpers
-    ' -----------------------------
+    Private Async Function RunLastDateOfBusinessAsync(customerFilter As String) As Task
+        Dim filter As String = If(customerFilter, "").Trim()
+
+        Dim reader As New LogBookReader(AppPaths.DataDir)
+
+        Dim yearResults As Dictionary(Of String, (dt As DateTime, inv As Integer?)) =
+            ComputeLastDateByCustomer(reader.ReadEntries(_yearTwoDigit), filter)
+
+        If yearResults.Count > 0 Then
+            ShowLastDateReport(yearResults, includeSourceLabel:=$"YEAR 20{_yearTwoDigit:00}")
+            Return
+        End If
+
+        Dim r = MessageBox.Show(
+            If(String.IsNullOrEmpty(filter),
+               $"No entries were found in year 20{_yearTwoDigit:00}." & vbCrLf &
+               "Search all years (all LOGBOOK.* files)?",
+               $"Customer '{filter}' was not found in year 20{_yearTwoDigit:00}." & vbCrLf &
+               "Search all years (all LOGBOOK.* files)?"),
+            "LOG BOOK",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question)
+
+        If r <> DialogResult.Yes Then
+            ShowMenu()
+            Return
+        End If
+        Dim status As New FrmDosPagedViewer()
+        status.Text = "LOG BOOK"
+        status.BeginStatusMode("[ESC = Quit]")
+        status.UpdateStatus("SEARCHING ALL YEARS..." & vbCrLf & vbCrLf & "PLEASE WAIT...")
+        status.Show(Me)
+        status.BringToFront()
+
+        Dim files As List(Of String)
+        Try
+            files = GetLogbookDataFilesInFileNameOrder()
+        Catch ex As Exception
+            status.UpdateStatus("ERROR:" & vbCrLf & ex.Message & vbCrLf & vbCrLf & "HIT [ESC] to Quit")
+            Return
+        End Try
+
+        Dim allYearResults As Dictionary(Of String, (dt As DateTime, inv As Integer?)) =
+            Await Task.Run(Function()
+                               Dim acc As New Dictionary(Of String, (dt As DateTime, inv As Integer?))(StringComparer.OrdinalIgnoreCase)
+
+                               For i As Integer = 0 To files.Count - 1
+                                   Dim fp As String = files(i)
+                                   Dim fileName As String = Path.GetFileName(fp)
+
+                                   status.UpdateStatus(
+                                       "SEARCHING ALL YEARS..." & vbCrLf &
+                                       $"SCANNING: {fileName}  ({i + 1}/{files.Count})" & vbCrLf & vbCrLf &
+                                       "PLEASE WAIT...")
+
+                                   For Each entry In reader.ReadEntriesFromSpecificFile(fp)
+                                       If entry Is Nothing Then Continue For
+
+                                       If Not String.IsNullOrEmpty(filter) Then
+                                           If entry.Customer Is Nothing OrElse entry.Customer.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0 Then
+                                               Continue For
+                                           End If
+                                       End If
+
+                                       Dim cust As String = NormalizeLegacyText(entry.Customer)
+                                       If cust.Length = 0 Then Continue For
+
+                                       Dim dtVal As DateTime
+                                       If Not TryParseLogbookDate(entry.DateText, dtVal) Then Continue For
+
+                                       Dim invVal As Integer? = entry.InvoiceNumber
+
+                                       If Not acc.ContainsKey(cust) Then
+                                           acc(cust) = (dtVal, invVal)
+                                       Else
+                                           Dim cur = acc(cust)
+                                           If dtVal > cur.dt Then
+                                               acc(cust) = (dtVal, invVal)
+                                           ElseIf dtVal = cur.dt Then
+                                               Dim curInv As Integer = If(cur.inv, Integer.MinValue)
+                                               Dim newInv As Integer = If(invVal, Integer.MinValue)
+                                               If newInv > curInv Then
+                                                   acc(cust) = (dtVal, invVal)
+                                               End If
+                                           End If
+                                       End If
+                                   Next
+                               Next
+
+                               Return acc
+                           End Function)
+
+        status.EndStatusMode()
+
+        If allYearResults.Count = 0 Then
+            status.SetSinglePage("NOT FOUND IN ANY YEAR." & vbCrLf & vbCrLf & "HIT [ESC] to Quit")
+            status.ShowDialog(Me)
+            status.Close()
+            status.Dispose()
+            ShowMenu()
+            Return
+        End If
+
+        status.SetPages(BuildLastDateReportPages(allYearResults, includeSourceLabel:="ALL YEARS"))
+        status.ShowDialog(Me)
+        status.Close()
+        status.Dispose()
+
+        ShowMenu()
+    End Function
+
+    Private Async Function RunSpecOrPartScanAllYearsAsync(searchText As String) As Task
+        Dim s As String = If(searchText, "").Trim()
+
+        If s.Length < 2 Then
+            BeginSpecOrPartScanPrompt()
+            Return
+        End If
+
+        Dim reader As New LogBookReader(AppPaths.DataDir)
+        Dim testFp As String = Path.Combine(AppPaths.DataDir, $"LOGBOOK.{_yearTwoDigit:00}")
+
+        Dim n As Integer = 0
+        Dim sampleSpec As String = ""
+        Dim samplePart As String = ""
+
+        Try
+            For Each e In reader.ReadEntriesFromSpecificFile(testFp)
+                If e Is Nothing Then Continue For
+                n += 1
+                If n = 1 Then
+                    sampleSpec = If(e.Spec, "")
+                    samplePart = If(e.PartNumber, "")
+                End If
+                If n >= 5 Then Exit For
+            Next
+        Catch ex As Exception
+            MessageBox.Show("READ FAILED:" & vbCrLf & ex.Message, "LOG BOOK DEBUG")
+            Return
+        End Try
+
+        Dim status As New FrmDosPagedViewer()
+        status.Text = "LOG BOOK"
+        status.BeginStatusMode("[ESC = Quit]")
+        status.UpdateStatus("SEARCHING ALL YEARS..." & vbCrLf & vbCrLf & "PLEASE WAIT...")
+        status.Show(Me)
+        status.BringToFront()
+
+        Dim matches As List(Of LogBookEntry) =
+            Await Task.Run(Function()
+                               Dim found As New List(Of LogBookEntry)()
+                               Dim currentYY As Integer = Date.Now.Year Mod 100
+
+                               For yy As Integer = 88 To currentYY
+                                   Dim fileName As String = $"LOGBOOK.{yy:00}"
+                                   Dim fp As String = Path.Combine(AppPaths.DataDir, fileName)
+
+                                   status.UpdateStatus("Please Wait, Press [ESC] to Exit" & vbCrLf &
+                                                       $"SCANNING: {fileName}" & vbCrLf & vbCrLf &
+                                                       "PLEASE WAIT...")
+
+                                   If Not File.Exists(fp) Then Continue For
+
+                                   For Each entry In reader.ReadEntriesFromSpecificFile(fp)
+                                       If entry Is Nothing Then Continue For
+
+                                       Dim needle As String = NormalizeForSearch(s)
+                                       Dim specVal As String = NormalizeForSearch(entry.Spec)
+                                       Dim partVal As String = NormalizeForSearch(entry.PartNumber)
+
+                                       If specVal.Contains(needle) OrElse partVal.Contains(needle) Then
+                                           found.Add(entry)
+                                           If found.Count = 1 Then
+                                               MessageBox.Show("FIRST MATCH FOUND! FILE: " & entry.SourceFile, "LOG BOOK DEBUG")
+                                           End If
+                                       End If
+                                   Next
+                                                       Next
+
+                                                       Return found
+                                                   End Function)
+
+                               ' Write LOGSPEC.DOC (Fix 3)
+                               Dim logspecPath As String = Path.Combine(AppPaths.WordDocsDir, "LOGSPEC.DOC")
+                               Try
+                                   Using writer As New StreamWriter(logspecPath, append:=False, encoding:=Encoding.ASCII)
+                                       writer.WriteLine("SCAN ENTIRE LOGBOOK")
+                                       writer.WriteLine()
+                                       writer.WriteLine($"SEARCH TEXT: {s}")
+                                       writer.WriteLine($"MATCHES FOUND: {matches.Count}")
+                                       writer.WriteLine()
+                                       writer.WriteLine("[ENTER = More]   [ESC = Quit]")
+                                       writer.WriteLine()
+
+                                       For Each entry In matches
+                                           writer.WriteLine(entry.FormatForDosViewer(includeSource:=True))
+                                           writer.WriteLine()
+                                       Next
+
+                                       writer.WriteLine("END OF LIST")
+                                   End Using
+                               Catch ex As Exception
+                                   ' Silent fail - don't block user if write fails
+                               End Try
+
+                               status.EndStatusMode()
+
+                               If matches.Count = 0 Then
+                                   status.SetSinglePage("NOTHING FOUND." & vbCrLf & vbCrLf & "HIT [ESC] to Exit")
+                                   status.ShowDialog(Me)
+                                   status.Close()
+                                   status.Dispose()
+                                   ShowMenu()
+                                   Return
+                               End If
+
+                               status.Close()
+                               status.Dispose()
+
+        Dim r = MessageBox.Show("Do you want to view all the entries I found (Y/N)",
+                                "LOG BOOK",
+                                MessageBoxButtons.YesNo,
+                                MessageBoxIcon.Question)
+
+        If r <> DialogResult.Yes Then
+            ShowMenu()
+            Return
+        End If
+
+        Dim pages As New List(Of String)()
+        pages.Add(BuildSpecOrPartScanIntroPage(s, matches.Count))
+
+        For Each entry In matches
+            pages.Add(entry.FormatForDosViewer(includeSource:=True))
+        Next
+
+        pages.Add("END OF LIST, HIT [ESC] to Exit")
+
+        Using viewer As New FrmDosPagedViewer()
+            viewer.Text = "LOG BOOK"
+            viewer.SetPages(pages)
+            viewer.ShowDialog(Me)
+        End Using
+
+        ShowMenu()
+    End Function
+
+    Private Async Function RunLogbookErrorScanAsync() As Task
+        Dim reader As New LogBookReader(AppPaths.DataDir)
+
+        Dim status As New FrmDosPagedViewer()
+        status.Text = "LOG BOOK"
+        status.BeginStatusMode("[ESC = Quit]")
+        status.UpdateStatus("Finding & printing logbook errors.   Please Wait.   Press [ESC] to Exit")
+        status.Show(Me)
+        status.BringToFront()
+
+        Dim lines As List(Of String) =
+            Await Task.Run(Function()
+                               Dim out As New List(Of String)()
+                               Dim first As Boolean = True
+                               Dim prevInv As Integer = 0
+
+                               For Each entry In reader.ReadEntries(_yearTwoDigit)
+                                   If entry Is Nothing Then Continue For
+                                   If Not entry.InvoiceNumber.HasValue Then Continue For
+
+                                   Dim inv As Integer = entry.InvoiceNumber.Value
+                                   Dim po As String = NormalizeLegacyText(entry.PONumber)
+                                   Dim isVoid As Boolean = po.Equals("VOID", StringComparison.OrdinalIgnoreCase)
+
+                                   If Not first Then
+                                       If Math.Abs(inv - prevInv) > 1 AndAlso Not isVoid Then
+                                           out.Add($"INVOICE JUMP: {prevInv} -> {inv}")
+                                           out.Add($"Cust: {NormalizeLegacyText(entry.Customer)}   Date: {NormalizeLegacyText(entry.DateText)}   PO: {po}")
+                                           out.Add("")
+                                       End If
+                                   End If
+
+                                   If inv < 10000 Then
+                                       out.Add($"LOW INVOICE#: {inv}")
+                                       out.Add($"Cust: {NormalizeLegacyText(entry.Customer)}   Date: {NormalizeLegacyText(entry.DateText)}   PO: {po}")
+                                       out.Add("")
+                                   End If
+
+                                   prevInv = inv
+                                   first = False
+                               Next
+
+                               Return out
+                           End Function)
+
+        status.EndStatusMode()
+
+        If lines.Count = 0 Then
+            status.SetSinglePage($"NO ERRORS FOUND IN LOGBOOK.{_yearTwoDigit:00}" & vbCrLf & vbCrLf &
+                                 "HIT [ESC] to Quit")
+            status.ShowDialog(Me)
+            status.Close()
+            status.Dispose()
+            ShowMenu()
+            Return
+        End If
+
+        Dim pages As New List(Of String)()
+        Dim sb As New System.Text.StringBuilder()
+
+        Const MaxLinesPerPage As Integer = 20
+        Dim n As Integer = 0
+
+        Dim header As String = $"LOGBOOK ERRORS (YEAR 20{_yearTwoDigit:00})"
+        sb.AppendLine(header)
+        sb.AppendLine(New String("-"c, Math.Min(78, header.Length)))
+
+        For Each line In lines
+            sb.AppendLine(line)
+            n += 1
+
+            If n >= MaxLinesPerPage Then
+                pages.Add(sb.ToString().TrimEnd())
+                sb.Clear()
+                sb.AppendLine(header)
+                sb.AppendLine(New String("-"c, Math.Min(78, header.Length)))
+                n = 0
+            End If
+        Next
+
+        If sb.Length > 0 Then
+            pages.Add(sb.ToString().TrimEnd())
+        End If
+
+        pages.Add("END OF LIST, HIT [ESC] to Exit")
+
+        status.SetPages(pages)
+        status.ShowDialog(Me)
+        status.Close()
+        status.Dispose()
+
+        ShowMenu()
+    End Function
+
+    Private Async Function RunFindAnythingAsync(searchText As String) As Task
+        Dim s As String = If(searchText, "").Trim()
+        If s.Length = 0 Then
+            ShowMenu()
+            Return
+        End If
+
+        Dim reader As New LogBookReader(AppPaths.DataDir)
+
+        Dim status As New FrmDosPagedViewer()
+        status.Text = "LOG BOOK"
+        status.BeginStatusMode("[ESC = Quit]")
+        status.UpdateStatus("Please Wait..." & vbCrLf & vbCrLf &
+                            $"SCANNING: LOGBOOK.{_yearTwoDigit:00}")
+        status.Show(Me)
+        status.BringToFront()
+
+        Dim matches As List(Of LogBookEntry) =
+            Await Task.Run(Function()
+                               Dim found As New List(Of LogBookEntry)()
+
+                               For Each entry In reader.ReadEntries(_yearTwoDigit)
+                                   If entry Is Nothing Then Continue For
+
+                                   Dim invText As String = If(entry.InvoiceNumber.HasValue, entry.InvoiceNumber.Value.ToString(), "")
+
+                                   Dim hay As String =
+                                       (NormalizeLegacyText(entry.DateText) & " " &
+                                        NormalizeLegacyText(entry.Customer) & " " &
+                                        NormalizeLegacyText(entry.PartNumber) & " " &
+                                        invText & " " &
+                                        NormalizeLegacyText(entry.PONumber) & " " &
+                                        NormalizeLegacyText(entry.Spec) & " " &
+                                        NormalizeLegacyText(entry.QtyAccepted) & " " &
+                                        NormalizeLegacyText(entry.QtyRejected) & " " &
+                                        NormalizeLegacyText(entry.Material) & " " &
+                                        NormalizeLegacyText(entry.HeatTreat) & " " &
+                                        NormalizeLegacyText(entry.ReasonRejected) & " " &
+                                        NormalizeLegacyText(entry.Status)).Trim()
+
+                                   If hay.IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0 Then
+                                       found.Add(entry)
+                                   End If
+                               Next
+
+                               Return found
+                           End Function)
+
+        status.EndStatusMode()
+
+        If matches.Count = 0 Then
+            status.SetSinglePage($"NOT FOUND IN LOGBOOK.{_yearTwoDigit:00}" & vbCrLf & vbCrLf &
+                                 "HIT [ESC] to Exit")
+            status.ShowDialog(Me)
+            status.Close()
+            status.Dispose()
+            ShowMenu()
+            Return
+        End If
+
+        Dim pages As New List(Of String)()
+        pages.Add("While in red screen, hit [F3] to scan for the next match." & vbCrLf &
+                  "[ENTER = More]   [ESC = Quit]" & vbCrLf & vbCrLf &
+                  $"SEARCH: {s}" & vbCrLf &
+                  $"MATCHES: {matches.Count}")
+
+        For Each entry In matches
+            pages.Add(entry.FormatForDosViewer(includeSource:=False))
+        Next
+
+        pages.Add("END OF LIST, HIT [ESC] to Exit")
+
+        status.SetPages(pages)
+        status.ShowDialog(Me)
+        status.Close()
+        status.Dispose()
+
+        ShowMenu()
+    End Function
+
     Private Function BuildPagesFromEntries(entries As IEnumerable(Of LogBookEntry),
                                           includePredicate As Func(Of LogBookEntry, Boolean),
                                           includeSource As Boolean) As List(Of String)
@@ -409,13 +979,13 @@ Public Class FormLogBookMenu
     End Sub
 
     Private Sub AddEntryToPages(entryText As String,
-                               pages As List(Of String),
-                               pageSb As System.Text.StringBuilder,
-                               ByRef pageEntryCount As Integer)
+                                pages As List(Of String),
+                                pageSb As System.Text.StringBuilder,
+                                ByRef pageEntryCount As Integer)
 
         Const EntriesPerPage As Integer = 3
 
-        Dim block As String = (If(entryText, "")).TrimEnd()
+        Dim block As String = If(entryText, "").TrimEnd()
 
         If pageEntryCount >= EntriesPerPage Then
             pages.Add(pageSb.ToString().TrimEnd())
@@ -433,12 +1003,194 @@ Public Class FormLogBookMenu
     End Sub
 
     Private Sub FlushPageIfNeeded(pages As List(Of String),
-                                 pageSb As System.Text.StringBuilder,
-                                 ByRef pageEntryCount As Integer)
+                                  pageSb As System.Text.StringBuilder,
+                                  ByRef pageEntryCount As Integer)
         If pageSb.Length > 0 Then
             pages.Add(pageSb.ToString().TrimEnd())
             pageSb.Clear()
             pageEntryCount = 0
         End If
     End Sub
+
+    Private Function ComputeLastDateByCustomer(entries As IEnumerable(Of LogBookEntry),
+                                               filter As String) As Dictionary(Of String, (dt As DateTime, inv As Integer?))
+
+        Dim acc As New Dictionary(Of String, (dt As DateTime, inv As Integer?))(StringComparer.OrdinalIgnoreCase)
+
+        For Each entry In entries
+            If entry Is Nothing Then Continue For
+
+            If Not String.IsNullOrEmpty(filter) Then
+                If entry.Customer Is Nothing OrElse entry.Customer.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0 Then
+                    Continue For
+                End If
+            End If
+
+            Dim cust As String = NormalizeLegacyText(entry.Customer)
+            If cust.Length = 0 Then Continue For
+
+            Dim dtVal As DateTime
+            If Not TryParseLogbookDate(entry.DateText, dtVal) Then Continue For
+
+            Dim invVal As Integer? = entry.InvoiceNumber
+
+            If Not acc.ContainsKey(cust) Then
+                acc(cust) = (dtVal, invVal)
+            Else
+                Dim cur = acc(cust)
+                If dtVal > cur.dt Then
+                    acc(cust) = (dtVal, invVal)
+                ElseIf dtVal = cur.dt Then
+                    Dim curInv As Integer = If(cur.inv, Integer.MinValue)
+                    Dim newInv As Integer = If(invVal, Integer.MinValue)
+                    If newInv > curInv Then
+                        acc(cust) = (dtVal, invVal)
+                    End If
+                End If
+            End If
+        Next
+
+        Return acc
+    End Function
+
+    Private Function TryParseLogbookDate(dateText As String, ByRef dt As DateTime) As Boolean
+        dt = DateTime.MinValue
+        If String.IsNullOrWhiteSpace(dateText) Then Return False
+
+        Dim s As String = NormalizeLegacyText(dateText)
+
+        Dim formats As String() = {
+            "MM-dd-yyyy",
+            "M-d-yyyy",
+            "MM/dd/yyyy",
+            "M/d/yyyy",
+            "MM-dd-yy",
+            "M-d-yy",
+            "MM/dd/yy",
+            "M/d/yy"
+        }
+
+        Return DateTime.TryParseExact(s, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, dt)
+    End Function
+
+    Private Sub ShowLastDateReport(results As Dictionary(Of String, (dt As DateTime, inv As Integer?)),
+                                   includeSourceLabel As String)
+
+        Using viewer As New FrmDosPagedViewer()
+            viewer.Text = "LOG BOOK"
+            viewer.SetPages(BuildLastDateReportPages(results, includeSourceLabel))
+            viewer.ShowDialog(Me)
+        End Using
+
+        ShowMenu()
+    End Sub
+
+    Private Function BuildLastDateReportPages(results As Dictionary(Of String, (dt As DateTime, inv As Integer?)),
+                                              includeSourceLabel As String) As List(Of String)
+
+        Dim keys As New List(Of String)(results.Keys)
+        keys.Sort(StringComparer.OrdinalIgnoreCase)
+
+        Dim pages As New List(Of String)()
+        Dim sb As New System.Text.StringBuilder()
+
+        Dim header As String =
+            "Company".PadRight(12) &
+            "Last Date".PadRight(14) &
+            "Invoice#" &
+            If(String.IsNullOrEmpty(includeSourceLabel), "", "   (" & includeSourceLabel & ")")
+
+        sb.AppendLine(header)
+        sb.AppendLine(New String("-"c, Math.Min(78, header.Length)))
+
+        Dim linesOnPage As Integer = 0
+        Const MaxLinesPerPage As Integer = 20
+
+        For Each cust In keys
+            Dim v = results(cust)
+            Dim dtStr As String = v.dt.ToString("MM-dd-yyyy")
+            Dim invStr As String = If(v.inv.HasValue, v.inv.Value.ToString(), "")
+
+            sb.AppendLine(cust.PadRight(12) & dtStr.PadRight(14) & invStr)
+            linesOnPage += 1
+
+            If linesOnPage >= MaxLinesPerPage Then
+                pages.Add(sb.ToString().TrimEnd())
+                sb.Clear()
+                sb.AppendLine(header)
+                sb.AppendLine(New String("-"c, Math.Min(78, header.Length)))
+                linesOnPage = 0
+            End If
+        Next
+
+        If sb.Length > 0 Then
+            pages.Add(sb.ToString().TrimEnd())
+        End If
+
+        pages.Add("END OF LIST, HIT [ESC] to Exit")
+        Return pages
+    End Function
+    Private Function NormalizeLegacyText(value As String) As String
+        If value Is Nothing Then Return ""
+        Return value.Trim().Trim(""""c)
+    End Function
+    Private Function NormalizeForSearch(value As String) As String
+        If value Is Nothing Then Return ""
+        Dim sb As New System.Text.StringBuilder(value.Length)
+        For Each ch In value.ToUpperInvariant()
+            If Char.IsLetterOrDigit(ch) Then sb.Append(ch)
+        Next
+        Return sb.ToString()
+    End Function
+
+    Private Function GetLogbookDataFilesInFileNameOrder() As List(Of String)
+        Dim all As String() = Directory.GetFiles(AppPaths.DataDir, "LOGBOOK.*", SearchOption.TopDirectoryOnly)
+        Dim valid As New List(Of String)()
+
+        For Each fp In all
+            Dim name As String = Path.GetFileName(fp)
+
+            ' Skip helper/derived files
+            If String.Equals(name, "LOGBOOK.BAK", StringComparison.OrdinalIgnoreCase) Then Continue For
+            If String.Equals(name, "LOGBOOK.PRN", StringComparison.OrdinalIgnoreCase) Then Continue For
+            If String.Equals(name, "LOGBOOK.SRT", StringComparison.OrdinalIgnoreCase) Then Continue For
+            If String.Equals(name, "LOGBOOK.DAT", StringComparison.OrdinalIgnoreCase) Then Continue For
+            If String.Equals(name, "LOGBOOK.BAC", StringComparison.OrdinalIgnoreCase) Then Continue For
+
+            If name.StartsWith("LOGBOOK.", StringComparison.OrdinalIgnoreCase) Then
+                Dim suffix As String = name.Substring("LOGBOOK.".Length).Trim()
+                Dim yy As Integer
+                If Integer.TryParse(suffix, yy) Then
+                    valid.Add(fp)
+                End If
+            End If
+        Next
+
+        valid.Sort(
+        Function(a, b)
+            Dim ea As String = Path.GetFileName(a).Substring("LOGBOOK.".Length)
+            Dim eb As String = Path.GetFileName(b).Substring("LOGBOOK.".Length)
+
+            Dim ya As Integer
+            Dim yb As Integer
+
+            If Not Integer.TryParse(ea, ya) Then ya = Integer.MaxValue
+            If Not Integer.TryParse(eb, yb) Then yb = Integer.MaxValue
+
+            Return ya.CompareTo(yb)
+        End Function)
+
+        Return valid
+    End Function
+
+    Private Function BuildSpecOrPartScanIntroPage(searchText As String, matchCount As Integer) As String
+        Dim sb As New System.Text.StringBuilder()
+        sb.AppendLine("SCAN ENTIRE LOGBOOK")
+        sb.AppendLine()
+        sb.AppendLine($"SEARCH TEXT: {searchText}")
+        sb.AppendLine($"MATCHES FOUND: {matchCount}")
+        sb.AppendLine()
+        sb.AppendLine("[ENTER = More]   [ESC = Quit]")
+        Return sb.ToString().TrimEnd()
+    End Function
 End Class

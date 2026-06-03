@@ -54,6 +54,11 @@ Public Class FormPersonalCalendar
         Me.KeyPreview = True
         Me.MinimumSize = New Size(1180, 680)
 
+        ' DOS base form styling (ApplyDosTheme will also do this, but keep it explicit)
+        Me.BackColor = UiTheme.DosBackColor
+        Me.ForeColor = UiTheme.DosForeColor
+        Me.Font = UiTheme.CreateDosFont(12.0F)
+
         If Not EnsureDataDirExistsFriendly() Then
             Me.Close()
             Return
@@ -167,8 +172,18 @@ Public Class FormPersonalCalendar
         header.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
         header.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
 
-        Dim lblTitle As New Label() With {.AutoSize = True, .Font = New Font("Segoe UI", 14.0F, FontStyle.Bold), .Text = "Personal Calendar"}
-        _lblHeaderRight = New Label() With {.AutoSize = True, .Font = New Font("Segoe UI", 10.0F), .Text = DateTime.Now.ToString("MM-dd-yy  ddd  h:mm tt", CultureInfo.InvariantCulture)}
+        Dim lblTitle As New Label() With {
+            .AutoSize = True,
+            .Font = UiTheme.CreateDosFont(14.0F, FontStyle.Bold),
+            .Text = "Personal Calendar"
+        }
+
+        _lblHeaderRight = New Label() With {
+            .AutoSize = True,
+            .Font = UiTheme.CreateDosFont(12.0F, FontStyle.Regular),
+            .Text = DateTime.Now.ToString("MM-dd-yy  ddd  h:mm tt", CultureInfo.InvariantCulture)
+        }
+
         header.Controls.Add(lblTitle, 0, 0)
         header.Controls.Add(_lblHeaderRight, 1, 0)
 
@@ -185,10 +200,10 @@ Public Class FormPersonalCalendar
         Dim btnNext As New Button() With {.Text = "Next Month (PgDn) >", .AutoSize = True}
         AddHandler btnNext.Click, Sub() NextMonth()
 
-        _lblMonth = New Label() With {.AutoSize = True, .Font = New Font("Segoe UI", 11.0F, FontStyle.Bold), .Padding = New Padding(12, 7, 12, 0)}
+        _lblMonth = New Label() With {.AutoSize = True, .Font = UiTheme.CreateDosFont(12.0F, FontStyle.Bold), .Padding = New Padding(12, 7, 12, 0)}
 
         Dim lblGo As New Label() With {.AutoSize = True, .Text = "Go to:", .Padding = New Padding(12, 10, 0, 0)}
-        _dtJump = New DateTimePicker() With {.Format = DateTimePickerFormat.Custom, .CustomFormat = "MMMM yyyy", .ShowUpDown = True, .Width = 160, .Value = _viewMonth}
+        _dtJump = New DateTimePicker() With {.Format = DateTimePickerFormat.Custom, .CustomFormat = "MMMM yyyy", .ShowUpDown = True, .Width = 180, .Value = _viewMonth}
 
         Dim btnGo As New Button() With {.Text = "Go (Enter)", .AutoSize = True}
         AddHandler btnGo.Click, Sub() GoToMonth(New DateTime(_dtJump.Value.Year, _dtJump.Value.Month, 1))
@@ -201,7 +216,7 @@ Public Class FormPersonalCalendar
             End Sub
 
         Dim lblSearch As New Label() With {.AutoSize = True, .Text = "Search:", .Padding = New Padding(12, 10, 0, 0)}
-        _txtSearch = New TextBox() With {.Width = 220}
+        _txtSearch = New TextBox() With {.Width = 260}
         AddHandler _txtSearch.TextChanged, Sub() BindGrid()
 
         _radSearchThisMonth = New RadioButton() With {.AutoSize = True, .Text = "This month", .Checked = True, .Padding = New Padding(6, 8, 0, 0)}
@@ -251,24 +266,29 @@ Public Class FormPersonalCalendar
             .AllowUserToAddRows = False,
             .AllowUserToDeleteRows = False,
             .SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-            .MultiSelect = True,
+            .MultiSelect = False,
             .AutoGenerateColumns = False,
             .AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
         }
 
         ConfigureGridColumns()
 
+        ' Double-click behavior (existing)
         AddHandler _grid.CellDoubleClick,
             Sub(sender, e)
                 If e.RowIndex < 0 Then Return
-                Dim r = TryCast(_grid.Rows(e.RowIndex).Tag, GridRow)
-                If r Is Nothing Then Return
+                HandleGridActivateRow(e.RowIndex)
+            End Sub
 
-                If _radSearchAllMonths IsNot Nothing AndAlso _radSearchAllMonths.Checked Then
-                    _radSearchThisMonth.Checked = True
-                    GoToMonth(New DateTime(_viewMonth.Year, r.StoredDate.Month, 1))
-                    _txtSearch.Focus()
-                    _txtSearch.SelectAll()
+        ' ENTER key to activate selected row (DOS-like)
+        AddHandler _grid.KeyDown,
+            Sub(sender, e)
+                If e.KeyCode = Keys.Enter Then
+                    e.Handled = True
+                    e.SuppressKeyPress = True
+                    If _grid.CurrentRow IsNot Nothing Then
+                        HandleGridActivateRow(_grid.CurrentRow.Index)
+                    End If
                 End If
             End Sub
 
@@ -294,14 +314,33 @@ Public Class FormPersonalCalendar
         Me.Controls.Clear()
         Me.Controls.Add(root)
 
+        ' Apply DOS theme to everything we just built
+        UiTheme.ApplyDosTheme(Me)
+
         ' clock
         Dim t As New Timer() With {.Interval = 1000}
-        AddHandler t.Tick, Sub()
-                               If _lblHeaderRight IsNot Nothing Then
-                                   _lblHeaderRight.Text = DateTime.Now.ToString("MM-dd-yy  ddd  h:mm tt", CultureInfo.InvariantCulture)
-                               End If
-                           End Sub
+        AddHandler t.Tick,
+            Sub()
+                If _lblHeaderRight IsNot Nothing Then
+                    _lblHeaderRight.Text = DateTime.Now.ToString("MM-dd-yy  ddd  h:mm tt", CultureInfo.InvariantCulture)
+                End If
+            End Sub
         t.Start()
+    End Sub
+
+    Private Sub HandleGridActivateRow(rowIndex As Integer)
+        If rowIndex < 0 Then Return
+        If _grid Is Nothing Then Return
+
+        Dim r = TryCast(_grid.Rows(rowIndex).Tag, GridRow)
+        If r Is Nothing Then Return
+
+        If _radSearchAllMonths IsNot Nothing AndAlso _radSearchAllMonths.Checked Then
+            _radSearchThisMonth.Checked = True
+            GoToMonth(New DateTime(_viewMonth.Year, r.StoredDate.Month, 1))
+            _txtSearch.Focus()
+            _txtSearch.SelectAll()
+        End If
     End Sub
 
     Private Sub ConfigureGridColumns()
@@ -834,6 +873,7 @@ Public Class FormPersonalCalendar
             Me.MaximizeBox = False
             Me.ShowInTaskbar = False
             Me.ClientSize = New Size(600, 210)
+            Me.KeyPreview = True
 
             Dim layout As New TableLayoutPanel() With {.Dock = DockStyle.Fill, .Padding = New Padding(10), .ColumnCount = 2, .RowCount = 4}
             layout.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
@@ -849,7 +889,7 @@ Public Class FormPersonalCalendar
             _dtp = New DateTimePicker() With {.Format = DateTimePickerFormat.Custom, .CustomFormat = "MM-dd", .ShowUpDown = True, .Value = New DateTime(2000, viewMonth.Month, 1)}
             layout.Controls.Add(_dtp, 1, 0)
 
-            Dim lblWarn As New Label() With {.AutoSize = True, .ForeColor = Color.DarkRed, .Text = ""}
+            Dim lblWarn As New Label() With {.AutoSize = True, .ForeColor = UiTheme.DosAccentColor, .Text = ""}
             layout.Controls.Add(New Label() With {.AutoSize = True, .Text = ""}, 0, 1)
             layout.Controls.Add(lblWarn, 1, 1)
 
@@ -876,6 +916,9 @@ Public Class FormPersonalCalendar
             Me.Controls.Add(layout)
             Me.AcceptButton = ok
             Me.CancelButton = cancel
+
+            ' Apply DOS theme to dialog
+            UiTheme.ApplyDosTheme(Me)
 
             AddHandler Me.FormClosing,
                 Sub(sender, e)

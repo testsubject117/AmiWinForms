@@ -174,8 +174,7 @@ Public Class RolodexPromptEngine
             Case 2
                 Return "Is this the Person you are looking for (Y/N) ?"
             Case 3
-                Return "[D] to Dial Number" & Environment.NewLine & Environment.NewLine &
-                       "[Shift] and [PrtSc] to Print"
+                Return "Click ""Print"" (Ctrl+P) to Print"
             Case Else
                 Return ""
         End Select
@@ -410,9 +409,7 @@ Public Class RolodexPromptEngine
 
             Case 3
                 Transcript.Add("")
-                Transcript.Add("[D] to Dial Number")
-                Transcript.Add("")
-                Transcript.Add("[Shift] and [PrtSc] to Print")
+                Transcript.Add("Click ""Print"" (Ctrl+P) to Print")
                 _isComplete = True
                 Return True
         End Select

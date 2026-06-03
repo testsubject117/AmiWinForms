@@ -23,6 +23,7 @@ Public Class FrmDosPagedViewer
     Private Const DebugBreakOnOpen As Boolean = False
 
     Public Sub New()
+        InitializeComponent()
         If DebugBreakOnOpen AndAlso Debugger.IsAttached Then
             Debugger.Break()
         End If
