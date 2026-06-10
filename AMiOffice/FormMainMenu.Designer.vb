@@ -79,12 +79,12 @@ Partial Class FormMainMenu
         tlpRoot.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 50.0F))
         tlpRoot.Controls.Add(flpLeft, 0, 0)
         tlpRoot.Controls.Add(flpRight, 1, 0)
-        tlpRoot.Dock = DockStyle.Fill
+        tlpRoot.Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right
         tlpRoot.Location = New Point(0, 48)
         tlpRoot.Name = "tlpRoot"
         tlpRoot.RowCount = 1
         tlpRoot.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
-        tlpRoot.Size = New Size(1200, 752)
+        tlpRoot.Size = New Size(1200, 730)
         tlpRoot.TabIndex = 1
         '
         ' flpLeft

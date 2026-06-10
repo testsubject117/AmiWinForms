@@ -9,6 +9,11 @@ Public NotInheritable Class LegacyDataPaths
     End Sub
 
     Public Shared ReadOnly Property BaseDataDir As String = "\\invoice\MainMenu\Data"
+    Public Shared ReadOnly Property WordDocDir As String = Path.Combine(BaseDataDir, "Word")
+
+    ' Ed Dean's Personal Backup destination (Option Y)
+    ' DOS used D: drive, modernized to UNC path
+    Public Shared ReadOnly Property PersonalBackupPath As String = "\\192.168.1.3\Shared\EdDeanBU"
 
     Public Shared ReadOnly Property LedgerCur As String =
         Path.Combine(BaseDataDir, "LEDGER.CUR")

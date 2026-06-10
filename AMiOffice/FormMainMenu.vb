@@ -35,6 +35,20 @@ Partial Public Class FormMainMenu
     ' Was 18; moved up another 5px -> 23
     Private Const PromptLiftPx As Integer = 23
 
+    ' --- Scrolling message (Option V) and subliminal flash (Option H) ---
+    Private lblScrollingMessage As Label = Nothing
+    Private _scrollingMessagePanel As Panel = Nothing
+    Private tmrScrollingMessage As Timer = Nothing
+    Private _scrollingMessageText As String = ""
+    Private _scrollingMessagePosition As Integer = -250
+    Private _scrollingMessagePadded As String = ""
+    Private _paintDebugCount As Integer = 0
+
+    Private lblSubliminalFlash As Label = Nothing
+    Private tmrSubliminalFlash As Timer = Nothing
+    Private _subliminalFlashText As String = ""
+    Private _subliminalFlashCounter As Integer = 0
+
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
 
@@ -53,6 +67,10 @@ Partial Public Class FormMainMenu
         lblDateTime.TextAlign = ContentAlignment.MiddleLeft
         lblDateTime.Padding = New Padding(0, 10, 0, 0)
         lblDateTime.Margin = New Padding(0)
+
+        ' Initialize scrolling message and subliminal flash
+        InitializeScrollingMessage()
+        InitializeSubliminalFlash()
 
         Me.BeginInvoke(New Action(Sub()
                                       ResizeButtonsToPanel(flpLeft)
@@ -104,7 +122,7 @@ Partial Public Class FormMainMenu
         flpLeft.Controls.Clear()
         flpRight.Controls.Clear()
 
-        ' Left column
+        ' Left column (15 buttons)
         AddMenuButton(flpLeft, "A", "Shop Card Generator")
         AddMenuButton(flpLeft, "B", "Invoice Generator")
         AddMenuButton(flpLeft, "C", "Checks and Cash Receipts")
@@ -119,13 +137,14 @@ Partial Public Class FormMainMenu
         AddMenuButton(flpLeft, "L", "Business Expenses Account")
         AddMenuButton(flpLeft, "M", "Quotation Form Generator")
         AddMenuButton(flpLeft, "N", "Rolodex")
+        AddMenuButton(flpLeft, "O", "Copy Spec Index")
 
-        ' Right column
-        AddMenuButton(flpRight, "O", "Copy Spec Index")
+        ' Right column (15 buttons)
         AddMenuButton(flpRight, "P", "Entire Ledger Viewing")
         AddMenuButton(flpRight, "Q", "Word Processor")
         AddMenuButton(flpRight, "R", "Find Word Processor Text")
         AddMenuButton(flpRight, "T", "Change Date or Time")
+        AddMenuButton(flpRight, "V", "Change Main Menu Message")
         AddMenuButton(flpRight, "X", "Typewriter Mode")
         AddMenuButton(flpRight, "Y", "Ed Dean's Personal Backup")
         AddMenuButton(flpRight, "Z", "Personal Calendar")
@@ -324,7 +343,12 @@ Partial Public Class FormMainMenu
                 NotYet("Print/Void Invoices (BOOT)")
 
             Case "H"
-                NotYet("Quick Message Flashing")
+                Using f As New FormQuickMessageFlashing()
+                    If f.ShowDialog(Me) = DialogResult.OK Then
+                        ' Reload subliminal message if changed
+                        ReloadSubliminalMessage()
+                    End If
+                End Using
 
             Case "I"
                 Try
@@ -358,7 +382,9 @@ Partial Public Class FormMainMenu
                 End Using
 
             Case "O"
-                NotYet("Copy Spec Index")
+                Using f As New FormCopySpecIndex()
+                    f.ShowDialog(Me)
+                End Using
 
             Case "P"
                 NotYet("Entire Ledger Viewing (ENTIRE)")
@@ -367,16 +393,87 @@ Partial Public Class FormMainMenu
                 NotYet("Word Processor")
 
             Case "R"
-                NotYet("Find Word Processor Text")
+                Using promptForm As New FormWordProcessorSearch()
+                    If promptForm.ShowDialog(Me) = DialogResult.OK Then
+                        Dim searchTerm As String = promptForm.SearchTerm
+
+                        If Not String.IsNullOrWhiteSpace(searchTerm) Then
+                            Try
+                                Dim searchSvc As New WordProcessorSearchService(LegacyDataPaths.WordDocDir)
+
+                                If Not searchSvc.DirectoryExists() Then
+                                    MessageBox.Show("Word processor directory not found:" & Environment.NewLine & LegacyDataPaths.WordDocDir,
+                                                  "Find Word Processor Text",
+                                                  MessageBoxButtons.OK,
+                                                  MessageBoxIcon.Warning)
+                                    Exit Select
+                                End If
+
+                                ' Show progress form
+                                Using progressForm As New FormTextSearchProgress()
+                                    progressForm.Show(Me)
+
+                                    ' Interactive search with callbacks (mimics DOS TS.COM)
+                                    Dim matchCount As Integer = searchSvc.SearchFilesInteractive(
+                                        searchTerm,
+                                        Sub(fileName)
+                                            ' Report file being searched
+                                            progressForm.AddSearchingFile(fileName)
+                                        End Sub,
+                                        Function(fileName, lineNumber, matchingLine) As Boolean
+                                            ' Match found - pause and ask user
+                                            progressForm.Hide()
+                                            Using matchForm As New FormTextSearchMatch(fileName, lineNumber, matchingLine, searchTerm)
+                                                Dim result As DialogResult = matchForm.ShowDialog(Me)
+                                                progressForm.Show()
+                                                Return result = DialogResult.Yes
+                                            End Using
+                                        End Function
+                                    )
+
+                                    progressForm.Close()
+
+                                    ' Search complete
+                                    If matchCount = 0 Then
+                                        MessageBox.Show("No matches found for: " & searchTerm,
+                                                      "Text Search Complete",
+                                                      MessageBoxButtons.OK,
+                                                      MessageBoxIcon.Information)
+                                    End If
+                                End Using
+
+                            Catch ex As Exception
+                                MessageBox.Show("Search failed:" & Environment.NewLine & ex.Message,
+                                              "Find Word Processor Text",
+                                              MessageBoxButtons.OK,
+                                              MessageBoxIcon.Error)
+                            End Try
+                        End If
+                    End If
+                End Using
 
             Case "T"
-                NotYet("Change Date or Time")
+                Using f As New FormDateTimeChange()
+                    f.ShowDialog(Me)
+                End Using
+
+            Case "V"
+                Using f As New FormChangeMenuMessage()
+                    If f.ShowDialog(Me) = DialogResult.OK Then
+                        ' Reload scrolling message if changed
+                        ReloadScrollingMessage()
+                    End If
+                End Using
 
             Case "X"
-                NotYet("Typewriter Mode")
+                Using f As New FormTypewriterMode()
+                    f.ShowDialog(Me)
+                End Using
 
             Case "Y"
-                NotYet("Ed Dean's Personal Backup")
+                Using f As New FormPersonalBackup()
+                    f.ShowDialog(Me)
+                End Using
 
             Case "Z"
                 Using f As New FormPersonalCalendar()
@@ -397,10 +494,14 @@ Partial Public Class FormMainMenu
                 End Using
 
             Case "4"
-                NotYet("Add Entries to Log Book")
+                Using f As New FormLogBookEntry()
+                    f.ShowDialog(Me)
+                End Using
 
             Case "6"
-                NotYet("Cadmium Cards")
+                Using f As New FormCadmiumCards()
+                    f.ShowDialog(Me)
+                End Using
 
             Case "7"
                 NotYet("Emergency PAYROLL System")
@@ -520,7 +621,8 @@ Partial Public Class FormMainMenu
         pnlPromptContainer.Controls.Add(pnlPromptHost)
         Me.Controls.Add(pnlPromptContainer)
 
-        pnlPromptContainer.BringToFront()
+        ' Ensure prompt container is at the very bottom, below scrolling message
+        pnlPromptContainer.SendToBack()
         LayoutPromptWithinContainer()
 
         AddHandler pnlPromptHost.Paint, AddressOf pnlPromptHost_Paint
@@ -607,6 +709,232 @@ Partial Public Class FormMainMenu
                             MessageBoxButtons.OK,
                             MessageBoxIcon.Error)
         End Try
+    End Sub
+
+    ' -------------------------------
+    ' Scrolling Message (Option V) - DOS line 700/730
+    ' -------------------------------
+    Private Sub InitializeScrollingMessage()
+        ' Remove any existing scrolling message controls first
+        Dim toRemove As New List(Of Control)
+        For Each ctrl As Control In Me.Controls
+            If TypeOf ctrl Is Panel AndAlso ctrl.BackColor = Color.White AndAlso ctrl.Dock = DockStyle.Bottom Then
+                toRemove.Add(ctrl)
+                Debug.WriteLine($"InitScrollMsg: Removing old panel at z-index {Me.Controls.GetChildIndex(ctrl)}")
+            End If
+        Next
+        For Each ctrl In toRemove
+            Me.Controls.Remove(ctrl)
+            ctrl.Dispose()
+        Next
+
+        ' Create a custom panel for the scrolling message with proper layering
+        Dim scrollPanel As New Panel() With {
+            .Height = 22,
+            .Dock = DockStyle.Bottom,
+            .BackColor = Color.White,
+            .Padding = New Padding(0),
+            .Margin = New Padding(0)
+        }
+
+        ' Enable double buffering on the panel
+        SetDoubleBuffered(scrollPanel)
+
+        ' Store panel reference so we can invalidate it
+        _scrollingMessagePanel = scrollPanel
+
+        ' Create label (just for storing text, not for display)
+        lblScrollingMessage = New Label() With {
+            .Font = New Font("Consolas", 10.0F, FontStyle.Regular),
+            .Text = ""
+        }
+
+        ' Use custom paint to draw text at exact X position (no spaces, just offset)
+        AddHandler scrollPanel.Paint, Sub(s As Object, e As PaintEventArgs)
+            If Not String.IsNullOrEmpty(_scrollingMessagePadded) Then
+                _paintDebugCount += 1
+
+                ' Calculate character width
+                Dim charWidth As Single = e.Graphics.MeasureString("M", lblScrollingMessage.Font).Width
+
+                ' Calculate X offset: negative position means off-screen to the right
+                ' When position = -100, text should start at panel.Width (far right)
+                ' When position = 0, text should start at X=0 (far left)
+                ' When position = 50, text should be scrolled left 50 characters
+                Dim xOffset As Single = -(_scrollingMessagePosition * charWidth)
+
+                If _paintDebugCount <= 5 Then
+                    Debug.WriteLine($"PAINT {_paintDebugCount}: pos={_scrollingMessagePosition}, charWidth={charWidth:F1}, xOffset={xOffset:F1}, panelWidth={scrollPanel.Width}")
+                End If
+
+                TextRenderer.DrawText(e.Graphics, _scrollingMessagePadded, lblScrollingMessage.Font, New Point(CInt(xOffset), 2), Color.Black, Color.White, TextFormatFlags.NoPadding Or TextFormatFlags.NoPrefix Or TextFormatFlags.SingleLine)
+            End If
+        End Sub
+
+        Debug.WriteLine($"InitScrollMsg: Panel created with custom paint handler")
+
+        Me.Controls.Add(scrollPanel)
+        scrollPanel.BringToFront()
+
+        ' Force immediate layout so sizes are correct
+        scrollPanel.PerformLayout()
+        Me.PerformLayout()
+
+        Debug.WriteLine($"InitScrollMsg: Panel added at z-index {Me.Controls.GetChildIndex(scrollPanel)}, Panel.Width={scrollPanel.Width}, Form.ClientWidth={Me.ClientSize.Width}")
+
+        ' Load message - will calculate proper start position after layout
+        ReloadScrollingMessage()
+
+        tmrScrollingMessage = New Timer() With {
+            .Interval = 80
+        }
+        AddHandler tmrScrollingMessage.Tick, AddressOf tmrScrollingMessage_Tick
+
+        ' Delay start to ensure label is properly sized
+        Dim startTimer As New Timer() With {.Interval = 100}
+        AddHandler startTimer.Tick, Sub()
+            startTimer.Stop()
+            startTimer.Dispose()
+            Debug.WriteLine($"InitScrollMsg DELAYED: Panel.Width={scrollPanel.Width}, Form.ClientWidth={Me.ClientSize.Width}")
+            CalculateStartPosition()
+            tmrScrollingMessage.Start()
+        End Sub
+        startTimer.Start()
+    End Sub
+
+    Private Sub CalculateStartPosition()
+        If lblScrollingMessage IsNot Nothing Then
+            Try
+                Using g As Graphics = lblScrollingMessage.CreateGraphics()
+                    Dim charWidth As Single = g.MeasureString("M", lblScrollingMessage.Font).Width
+                    ' Use form width instead of label width
+                    Dim visibleChars As Integer = Math.Max(1, CInt(Me.ClientSize.Width / charWidth))
+                    ' Start with message completely off-screen to the right
+                    ' Position should be NEGATIVE and LARGER than visibleChars so it starts off-screen
+                    _scrollingMessagePosition = -(visibleChars + 20)
+                    Debug.WriteLine($"ScrollMsg: Form width={Me.ClientSize.Width}, Label width={lblScrollingMessage.Width}, charWidth={charWidth}, visibleChars={visibleChars}, startPos={_scrollingMessagePosition}")
+                End Using
+            Catch ex As Exception
+                _scrollingMessagePosition = -200
+                Debug.WriteLine($"ScrollMsg: Error calculating, using default -200: {ex.Message}")
+            End Try
+        Else
+            _scrollingMessagePosition = -200
+            Debug.WriteLine("ScrollMsg: Label is Nothing, using default -200")
+        End If
+    End Sub
+
+    Private Sub SetDoubleBuffered(ctrl As Control)
+        ' Enable double buffering to reduce flicker
+        Try
+            Dim prop As System.Reflection.PropertyInfo = GetType(Control).GetProperty("DoubleBuffered", 
+                System.Reflection.BindingFlags.Instance Or System.Reflection.BindingFlags.NonPublic)
+            If prop IsNot Nothing Then
+                prop.SetValue(ctrl, True, Nothing)
+            End If
+        Catch
+            ' Ignore if we can't set it
+        End Try
+    End Sub
+
+    Private Sub ReloadScrollingMessage()
+        _scrollingMessageText = MessageService.ReadScrollingMessage()
+
+        If String.IsNullOrEmpty(_scrollingMessageText) Then
+            _scrollingMessagePadded = "Active Magnetic Inspection's computerized office system.       By: Dean Beiner       (C)opyright 1989-1993"
+        Else
+            _scrollingMessagePadded = _scrollingMessageText
+        End If
+
+        ' Add trailing spaces for clean separation between loops
+        ' Using 30 spaces for reasonable gap between message repeats
+        _scrollingMessagePadded = _scrollingMessagePadded & New String(" "c, 30)
+
+        ' Recalculate start position when message changes
+        CalculateStartPosition()
+    End Sub
+
+    Private Sub tmrScrollingMessage_Tick(sender As Object, e As EventArgs)
+        If _scrollingMessagePanel Is Nothing OrElse String.IsNullOrEmpty(_scrollingMessagePadded) Then
+            Return
+        End If
+
+        Try
+            ' Calculate how many characters fit based on FORM CLIENT width
+            Using g As Graphics = _scrollingMessagePanel.CreateGraphics()
+                Dim charWidth As Single = g.MeasureString("M", lblScrollingMessage.Font).Width
+                Dim visibleChars As Integer = Math.Max(1, CInt(Me.ClientSize.Width / charWidth))
+
+                ' DOS behavior: scroll left character-by-character
+                _scrollingMessagePosition += 1
+
+                ' Reset when message has completely scrolled off the left
+                If _scrollingMessagePosition > _scrollingMessagePadded.Length + visibleChars Then
+                    _scrollingMessagePosition = -visibleChars - 5
+                    Debug.WriteLine($"ScrollMsg RESET: visibleChars={visibleChars}, newPos={_scrollingMessagePosition}")
+                End If
+
+                ' Trigger repaint
+                _scrollingMessagePanel.Invalidate()
+            End Using
+        Catch ex As Exception
+            Debug.WriteLine($"ScrollMsg ERROR: {ex.Message}")
+        End Try
+    End Sub
+
+    ' -------------------------------
+    ' Subliminal Flash (Option H) - DOS line 705
+    ' -------------------------------
+    Private Sub InitializeSubliminalFlash()
+        ' Create label at top-right of form for subliminal flash
+        ' DOS behavior: LOCATE 1,34 (line 1, column 34)
+        ' Subliminal message - use matching colors so it's nearly invisible
+        lblSubliminalFlash = New Label() With {
+            .AutoSize = True,
+            .Location = New Point(Me.ClientSize.Width - 350, 8),
+            .BackColor = Color.Black,
+            .ForeColor = Color.Black,
+            .Font = New Font("Consolas", 9.0F, FontStyle.Regular),
+            .TextAlign = ContentAlignment.MiddleRight,
+            .Text = "",
+            .Visible = False
+        }
+        Me.Controls.Add(lblSubliminalFlash)
+        lblSubliminalFlash.BringToFront()
+
+        ' Load message
+        ReloadSubliminalMessage()
+
+        ' Start flash timer - faster interval for true subliminal effect
+        tmrSubliminalFlash = New Timer() With {
+            .Interval = 50
+        }
+        AddHandler tmrSubliminalFlash.Tick, AddressOf tmrSubliminalFlash_Tick
+        tmrSubliminalFlash.Start()
+    End Sub
+
+    Private Sub ReloadSubliminalMessage()
+        _subliminalFlashText = MessageService.ReadSubliminalMessage()
+        _subliminalFlashCounter = 0
+    End Sub
+
+    Private Sub tmrSubliminalFlash_Tick(sender As Object, e As EventArgs)
+        If lblSubliminalFlash Is Nothing OrElse String.IsNullOrEmpty(_subliminalFlashText) Then
+            Return
+        End If
+
+        ' DOS behavior: flash every 40 idle-loop cycles (line 705)
+        _subliminalFlashCounter += 1
+
+        If _subliminalFlashCounter = 40 Then
+            ' Show the message briefly
+            lblSubliminalFlash.Text = _subliminalFlashText
+            lblSubliminalFlash.Visible = True
+            _subliminalFlashCounter = 0
+        ElseIf _subliminalFlashCounter = 1 Then
+            ' Hide it immediately (subliminal effect)
+            lblSubliminalFlash.Visible = False
+        End If
     End Sub
 
 End Class

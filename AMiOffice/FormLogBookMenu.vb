@@ -29,7 +29,6 @@ Public Class FormLogBookMenu
         PoLookupPrompt
         LastDateOfBusinessPrompt
         SpecOrPartScanPrompt
-        ErrorScanPrinterReadyPrompt
         FindAnythingPrompt
     End Enum
 
@@ -131,7 +130,7 @@ Public Class FormLogBookMenu
                     Return True
 
                 Case Keys.D7, Keys.NumPad7
-                    BeginErrorScanPrinterReadyPrompt()
+                    Dim t As Task = RunLogbookErrorScanAsync()
                     Return True
 
                 Case Keys.D8, Keys.NumPad8
@@ -252,20 +251,6 @@ Public Class FormLogBookMenu
         Me.BeginInvoke(New Action(Sub() txtInput.Clear()))
     End Sub
 
-    Private Sub BeginErrorScanPrinterReadyPrompt()
-        _mode = InputMode.ErrorScanPrinterReadyPrompt
-        RenderMenu(promptLine:="Get printer ready & hit [ENTER]")
-
-        lblPrompt.Text = "Get printer ready & hit [ENTER] "
-        txtInput.Text = ""
-        pnlPrompt.Visible = True
-        PositionPromptOverlay()
-
-        pnlPrompt.BringToFront()
-        txtInput.Focus()
-        Me.BeginInvoke(New Action(Sub() txtInput.Clear()))
-    End Sub
-
     Private Sub BeginFindAnythingPrompt()
         _mode = InputMode.FindAnythingPrompt
         RenderMenu(promptLine:="While in red screen, hit [F3] to scan for the next match." & vbCrLf &
@@ -340,9 +325,6 @@ Public Class FormLogBookMenu
 
             Case InputMode.SpecOrPartScanPrompt
                 Dim t As Task = RunSpecOrPartScanAllYearsAsync(input)
-
-            Case InputMode.ErrorScanPrinterReadyPrompt
-                Dim t As Task = RunLogbookErrorScanAsync()
 
             Case InputMode.FindAnythingPrompt
                 Dim t As Task = RunFindAnythingAsync(input)
@@ -531,6 +513,12 @@ Public Class FormLogBookMenu
             ShowMenu()
             Return
         End If
+
+        ' Hide the prompt BEFORE opening the viewer
+        pnlPrompt.Visible = False
+        txtInput.Text = ""
+        Me.Refresh()
+
         Dim status As New FrmDosPagedViewer()
         status.Text = "LOG BOOK"
         status.BeginStatusMode("[ESC = Quit]")
@@ -600,18 +588,22 @@ Public Class FormLogBookMenu
 
         If allYearResults.Count = 0 Then
             status.SetSinglePage("NOT FOUND IN ANY YEAR." & vbCrLf & vbCrLf & "HIT [ESC] to Quit")
-            status.ShowDialog(Me)
+            status.ShowDialog()
             status.Close()
             status.Dispose()
+            Me.Show()
+            Me.Activate()
             ShowMenu()
             Return
         End If
 
         status.SetPages(BuildLastDateReportPages(allYearResults, includeSourceLabel:="ALL YEARS"))
-        status.ShowDialog(Me)
+        status.ShowDialog()
         status.Close()
         status.Dispose()
 
+        Me.Show()
+        Me.Activate()
         ShowMenu()
     End Function
 
@@ -645,46 +637,95 @@ Public Class FormLogBookMenu
             Return
         End Try
 
+        ' Hide the prompt panel
+        pnlPrompt.Visible = False
+        txtInput.Text = ""
+        Me.Refresh()
+
         Dim status As New FrmDosPagedViewer()
         status.Text = "LOG BOOK"
         status.BeginStatusMode("[ESC = Quit]")
         status.UpdateStatus("SEARCHING ALL YEARS..." & vbCrLf & vbCrLf & "PLEASE WAIT...")
-        status.Show(Me)
+
+        ' Hide THIS menu form completely
+        Me.Hide()
+        status.Show()
         status.BringToFront()
 
         Dim matches As List(Of LogBookEntry) =
             Await Task.Run(Function()
                                Dim found As New List(Of LogBookEntry)()
                                Dim currentYY As Integer = Date.Now.Year Mod 100
+                               Dim totalEntries As Integer = 0
+                               Dim filesScanned As Integer = 0
+                               Dim needle As String = NormalizeForSearch(s)
 
-                               For yy As Integer = 88 To currentYY
-                                   Dim fileName As String = $"LOGBOOK.{yy:00}"
-                                   Dim fp As String = Path.Combine(AppPaths.DataDir, fileName)
+                               ' Scan from 1988 (yy=88) through 1999 (yy=99), then 2000 (yy=00) through current year
+                                For yy As Integer = 88 To 99
+                                    Dim fileName As String = $"LOGBOOK.{yy:00}"
+                                    Dim fp As String = Path.Combine(AppPaths.DataDir, fileName)
+                                    Dim fullYear As Integer = 1900 + yy
 
-                                   status.UpdateStatus("Please Wait, Press [ESC] to Exit" & vbCrLf &
-                                                       $"SCANNING: {fileName}" & vbCrLf & vbCrLf &
-                                                       "PLEASE WAIT...")
+                                    If Not File.Exists(fp) Then
+                                        status.UpdateStatus($"LOG BOOK does't exist for the year of  {yy}")
+                                        Threading.Thread.Sleep(50)
+                                        Continue For
+                                    End If
 
-                                   If Not File.Exists(fp) Then Continue For
+                                    status.UpdateStatus($"Scanning the year of {fullYear}")
+                                    Threading.Thread.Sleep(50)
 
-                                   For Each entry In reader.ReadEntriesFromSpecificFile(fp)
+                                    filesScanned += 1
+                                    Dim entriesInFile As Integer = 0
+
+                                    For Each entry In reader.ReadEntriesFromSpecificFile(fp)
                                        If entry Is Nothing Then Continue For
 
-                                       Dim needle As String = NormalizeForSearch(s)
-                                       Dim specVal As String = NormalizeForSearch(entry.Spec)
-                                       Dim partVal As String = NormalizeForSearch(entry.PartNumber)
+                                       totalEntries += 1
+                                       entriesInFile += 1
 
-                                       If specVal.Contains(needle) OrElse partVal.Contains(needle) Then
-                                           found.Add(entry)
-                                           If found.Count = 1 Then
-                                               MessageBox.Show("FIRST MATCH FOUND! FILE: " & entry.SourceFile, "LOG BOOK DEBUG")
+                                               Dim specVal As String = NormalizeForSearch(entry.Spec)
+                                               Dim partVal As String = NormalizeForSearch(entry.PartNumber)
+
+                                               If specVal.Contains(needle) OrElse partVal.Contains(needle) Then
+                                                   found.Add(entry)
+                                               End If
+                                           Next
+                                       Next
+
+                                               ' Now scan 2000s (yy = 00 through currentYY)
+                                       For yy As Integer = 0 To currentYY
+                                           Dim fileName As String = $"LOGBOOK.{yy:00}"
+                                           Dim fp As String = Path.Combine(AppPaths.DataDir, fileName)
+                                           Dim fullYear As Integer = 2000 + yy
+
+                                           If Not File.Exists(fp) Then
+                                               status.UpdateStatus($"LOG BOOK does't exist for the year of  {yy}")
+                                               Threading.Thread.Sleep(50)
+                                               Continue For
                                            End If
-                                       End If
-                                   Next
-                                                       Next
 
-                                                       Return found
-                                                   End Function)
+                                           status.UpdateStatus($"Scanning the year of {fullYear}")
+                                           Threading.Thread.Sleep(50)
+
+                                           filesScanned += 1
+
+                                           For Each entry In reader.ReadEntriesFromSpecificFile(fp)
+                                       If entry Is Nothing Then Continue For
+
+                                       totalEntries += 1
+
+                                               Dim specVal As String = NormalizeForSearch(entry.Spec)
+                                               Dim partVal As String = NormalizeForSearch(entry.PartNumber)
+
+                                               If specVal.Contains(needle) OrElse partVal.Contains(needle) Then
+                                                   found.Add(entry)
+                                               End If
+                                                   Next
+                                               Next
+
+                                               Return found
+                                           End Function)
 
                                ' Write LOGSPEC.DOC (Fix 3)
                                Dim logspecPath As String = Path.Combine(AppPaths.WordDocsDir, "LOGSPEC.DOC")
@@ -709,56 +750,58 @@ Public Class FormLogBookMenu
                                    ' Silent fail - don't block user if write fails
                                End Try
 
-                               status.EndStatusMode()
+                                                           status.EndStatusMode()
+                                                           status.Close()
+                                                           status.Dispose()
 
-                               If matches.Count = 0 Then
-                                   status.SetSinglePage("NOTHING FOUND." & vbCrLf & vbCrLf & "HIT [ESC] to Exit")
-                                   status.ShowDialog(Me)
-                                   status.Close()
-                                   status.Dispose()
-                                   ShowMenu()
-                                   Return
-                               End If
+                                                           ' Show one-time informational message about Word
+                                                           If Not UserSettings.GetFlag("LogBookSpec_WordLaunchSeen") Then
+                                                               MessageBox.Show(
+                                                                   "Search complete!" & vbCrLf & vbCrLf &
+                                                                   "Results will open in Microsoft Word." & vbCrLf & vbCrLf &
+                                                                   "You can view, search, and print the results, then close Word when finished.",
+                                                                   "LOG BOOK",
+                                                                   MessageBoxButtons.OK,
+                                                                   MessageBoxIcon.Information)
+                                                               UserSettings.SetFlag("LogBookSpec_WordLaunchSeen")
+                                                           End If
 
-                               status.Close()
-                               status.Dispose()
+                                                           ' Launch Word to view LOGSPEC.DOC (matching DOS behavior)
+                                                           Try
+                                                               Dim psi As New ProcessStartInfo With {
+                                                                   .FileName = logspecPath,
+                                                                   .UseShellExecute = True
+                                                               }
+                                                               Process.Start(psi)
+                                                           Catch ex As Exception
+                                                               MessageBox.Show($"Unable to open LOGSPEC.DOC:{vbCrLf}{ex.Message}",
+                                                                               "LOG BOOK",
+                                                                               MessageBoxButtons.OK,
+                                                                                                               MessageBoxIcon.Warning)
+                                                                                                           End Try
 
-        Dim r = MessageBox.Show("Do you want to view all the entries I found (Y/N)",
-                                "LOG BOOK",
-                                MessageBoxButtons.YesNo,
-                                MessageBoxIcon.Question)
-
-        If r <> DialogResult.Yes Then
-            ShowMenu()
-            Return
-        End If
-
-        Dim pages As New List(Of String)()
-        pages.Add(BuildSpecOrPartScanIntroPage(s, matches.Count))
-
-        For Each entry In matches
-            pages.Add(entry.FormatForDosViewer(includeSource:=True))
-        Next
-
-        pages.Add("END OF LIST, HIT [ESC] to Exit")
-
-        Using viewer As New FrmDosPagedViewer()
-            viewer.Text = "LOG BOOK"
-            viewer.SetPages(pages)
-            viewer.ShowDialog(Me)
-        End Using
-
-        ShowMenu()
-    End Function
+                                                                                                           ' Re-show menu after Word launch
+                                                                                                           Me.Show()
+                                                                                                           Me.Activate()
+                                                                                                           ShowMenu()
+                                                                               End Function
 
     Private Async Function RunLogbookErrorScanAsync() As Task
         Dim reader As New LogBookReader(AppPaths.DataDir)
+
+        ' Hide the prompt panel
+        pnlPrompt.Visible = False
+        txtInput.Text = ""
+        Me.Refresh()
 
         Dim status As New FrmDosPagedViewer()
         status.Text = "LOG BOOK"
         status.BeginStatusMode("[ESC = Quit]")
         status.UpdateStatus("Finding & printing logbook errors.   Please Wait.   Press [ESC] to Exit")
-        status.Show(Me)
+
+        ' Hide THIS menu form completely
+        Me.Hide()
+        status.Show()
         status.BringToFront()
 
         Dim lines As List(Of String) =
@@ -801,9 +844,11 @@ Public Class FormLogBookMenu
         If lines.Count = 0 Then
             status.SetSinglePage($"NO ERRORS FOUND IN LOGBOOK.{_yearTwoDigit:00}" & vbCrLf & vbCrLf &
                                  "HIT [ESC] to Quit")
-            status.ShowDialog(Me)
+            status.ShowDialog()
             status.Close()
             status.Dispose()
+            Me.Show()
+            Me.Activate()
             ShowMenu()
             Return
         End If
@@ -838,10 +883,12 @@ Public Class FormLogBookMenu
         pages.Add("END OF LIST, HIT [ESC] to Exit")
 
         status.SetPages(pages)
-        status.ShowDialog(Me)
+        status.ShowDialog()
         status.Close()
         status.Dispose()
 
+        Me.Show()
+        Me.Activate()
         ShowMenu()
     End Function
 
@@ -852,76 +899,87 @@ Public Class FormLogBookMenu
             Return
         End If
 
+        ' Hide the prompt panel
+        pnlPrompt.Visible = False
+        txtInput.Text = ""
+        Me.Refresh()
+
         Dim reader As New LogBookReader(AppPaths.DataDir)
+        Dim matches As List(Of LogBookEntry)
 
         Dim status As New FrmDosPagedViewer()
         status.Text = "LOG BOOK"
+        status.EnableSearchMode(s, $"LOGBOOK.{_yearTwoDigit:00}")  ' Pass search term and filename
         status.BeginStatusMode("[ESC = Quit]")
         status.UpdateStatus("Please Wait..." & vbCrLf & vbCrLf &
                             $"SCANNING: LOGBOOK.{_yearTwoDigit:00}")
-        status.Show(Me)
+
+        ' Hide THIS menu form completely before showing the viewer
+        Me.Hide()
+        status.Show()
         status.BringToFront()
 
-        Dim matches As List(Of LogBookEntry) =
-            Await Task.Run(Function()
-                               Dim found As New List(Of LogBookEntry)()
+        matches = Await Task.Run(Function()
+                                     Dim found As New List(Of LogBookEntry)()
 
-                               For Each entry In reader.ReadEntries(_yearTwoDigit)
-                                   If entry Is Nothing Then Continue For
+                                     For Each entry In reader.ReadEntries(_yearTwoDigit)
+                                         If entry Is Nothing Then Continue For
 
-                                   Dim invText As String = If(entry.InvoiceNumber.HasValue, entry.InvoiceNumber.Value.ToString(), "")
+                                         Dim invText As String = If(entry.InvoiceNumber.HasValue, entry.InvoiceNumber.Value.ToString(), "")
 
-                                   Dim hay As String =
-                                       (NormalizeLegacyText(entry.DateText) & " " &
-                                        NormalizeLegacyText(entry.Customer) & " " &
-                                        NormalizeLegacyText(entry.PartNumber) & " " &
-                                        invText & " " &
-                                        NormalizeLegacyText(entry.PONumber) & " " &
-                                        NormalizeLegacyText(entry.Spec) & " " &
-                                        NormalizeLegacyText(entry.QtyAccepted) & " " &
-                                        NormalizeLegacyText(entry.QtyRejected) & " " &
-                                        NormalizeLegacyText(entry.Material) & " " &
-                                        NormalizeLegacyText(entry.HeatTreat) & " " &
-                                        NormalizeLegacyText(entry.ReasonRejected) & " " &
-                                        NormalizeLegacyText(entry.Status)).Trim()
+                                         Dim hay As String =
+                                             (NormalizeLegacyText(entry.DateText) & " " &
+                                              NormalizeLegacyText(entry.Customer) & " " &
+                                              NormalizeLegacyText(entry.PartNumber) & " " &
+                                              invText & " " &
+                                              NormalizeLegacyText(entry.PONumber) & " " &
+                                              NormalizeLegacyText(entry.Spec) & " " &
+                                              NormalizeLegacyText(entry.QtyAccepted) & " " &
+                                              NormalizeLegacyText(entry.QtyRejected) & " " &
+                                              NormalizeLegacyText(entry.Material) & " " &
+                                              NormalizeLegacyText(entry.HeatTreat) & " " &
+                                              NormalizeLegacyText(entry.ReasonRejected) & " " &
+                                              NormalizeLegacyText(entry.Status)).Trim()
 
-                                   If hay.IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0 Then
-                                       found.Add(entry)
-                                   End If
-                               Next
+                                         If hay.IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0 Then
+                                             found.Add(entry)
+                                         End If
+                                     Next
 
-                               Return found
-                           End Function)
+                                     Return found
+                                 End Function)
 
         status.EndStatusMode()
 
         If matches.Count = 0 Then
-            status.SetSinglePage($"NOT FOUND IN LOGBOOK.{_yearTwoDigit:00}" & vbCrLf & vbCrLf &
-                                 "HIT [ESC] to Exit")
-            status.ShowDialog(Me)
-            status.Close()
-            status.Dispose()
-            ShowMenu()
-            Return
+            ' DOS behavior: Stay in red screen, show "not found" with flashing message
+            status.SetSearchResultNotFound()
+            status.SetSinglePage("")  ' Empty content, the cyan bars show the message
+        Else
+            status.SetSearchResultFound()
+            Dim pages As New List(Of String)()
+            pages.Add("While in red screen, hit [F3] to scan for the next match." & vbCrLf &
+                      "[ENTER = More]   [ESC = Quit]" & vbCrLf & vbCrLf &
+                      $"SEARCH: {s}" & vbCrLf &
+                      $"MATCHES: {matches.Count}")
+
+            For Each entry In matches
+                pages.Add(entry.FormatForDosViewer(includeSource:=False))
+            Next
+
+            pages.Add("END OF LIST, HIT [ESC] to Exit")
+
+            status.SetPages(pages)
         End If
 
-        Dim pages As New List(Of String)()
-        pages.Add("While in red screen, hit [F3] to scan for the next match." & vbCrLf &
-                  "[ENTER = More]   [ESC = Quit]" & vbCrLf & vbCrLf &
-                  $"SEARCH: {s}" & vbCrLf &
-                  $"MATCHES: {matches.Count}")
-
-        For Each entry In matches
-            pages.Add(entry.FormatForDosViewer(includeSource:=False))
-        Next
-
-        pages.Add("END OF LIST, HIT [ESC] to Exit")
-
-        status.SetPages(pages)
-        status.ShowDialog(Me)
+        ' Show as standalone modal dialog (no parent)
+        status.ShowDialog()
         status.Close()
         status.Dispose()
 
+        ' Re-show and re-activate the menu
+        Me.Show()
+        Me.Activate()
         ShowMenu()
     End Function
 
