@@ -43,7 +43,7 @@ Partial Public Class FormLedgerMenu
         flpLeft.AutoScroll = False
 
         Me.Width = 1000
-        Me.Height = 720
+        Me.Height = 800
 
         BuildLedgerMenu()
         TightenChecksMenuButtons()

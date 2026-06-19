@@ -326,7 +326,7 @@ Public Class FormPriceList
         AddCompactMenuButton("M", "View all Standard Procedures", Sub() ViewStandardProcedures())
         AddCompactMenuButton("N", "Sort Customers Actual Names", Sub() SortCustomerNames())
         AddCompactMenuButton("O", "Scan all price lists for errors", Sub() ScanForErrors())
-        AddCompactMenuButton("P", "Scan price lists for errors and min. charge's that are too low (PROCDURE)", Sub() ScanForLowMinCharges())
+        AddCompactMenuButton("P", "Scan price lists for errors and min. charge's that are too low (PROCEDURE)", Sub() ScanForLowMinCharges())
         AddCompactMenuButton("S", "Scan all price lists for Anything Else", Sub() ScanForAnything())
         AddCompactMenuButton("T", "Change some customers min charge for a procedure", Sub() ChangeMinChargeForProcedure())
         AddCompactMenuButton("U", "Update Environmental Surcharge customer list", Sub() UpdateEnvironmentalSurcharge())

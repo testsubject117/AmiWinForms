@@ -25,7 +25,7 @@ Public Class FormEmpNameEditor
 
         ' Match CHECKS menu sizing/layout
         Me.Width = 1000
-        Me.Height = 720
+        Me.Height = 800
 
         ShowVersionInHeader = False
         UpdateHeaderClock()

@@ -3,7 +3,7 @@ Option Explicit On
 
 Friend Module BuildInfo
     Friend Const ProductVersion As String = "1.0.0"
-    Friend Const BuildNumber As String = "49"
+    Friend Const BuildNumber As String = "52"
 
     Friend ReadOnly Property DisplayVersion As String
         Get
