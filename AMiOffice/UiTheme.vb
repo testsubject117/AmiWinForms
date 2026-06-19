@@ -52,8 +52,8 @@ Friend Module UiTheme
     End Property
 
     Friend Function CreateDosTitleFont() As Font
-        ' Keep your existing title font choice
-        Return New Font("Castellar", 36.0F, FontStyle.Bold, GraphicsUnit.Point)
+        ' Back to medium size - we'll reduce padding instead
+        Return New Font("Castellar", 28.0F, FontStyle.Bold, GraphicsUnit.Point)
     End Function
 
     Friend Sub ApplyDosTitleStyle(lbl As Label)

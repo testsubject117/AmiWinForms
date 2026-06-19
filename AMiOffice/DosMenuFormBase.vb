@@ -84,9 +84,9 @@ Public Class DosMenuFormBase
 
         ' Bottom bar with small gray ESC Close at bottom-right
         pnlBottom.Dock = DockStyle.Bottom
-        pnlBottom.Height = 52
+        pnlBottom.Height = 32  ' Reduced from 35 to 32 to give more space for buttons
         pnlBottom.BackColor = _bgDarkGray
-        pnlBottom.Padding = New Padding(0, 10, 0, 0)
+        pnlBottom.Padding = New Padding(0, 1, 0, 0)  ' Minimal top padding
 
         btnEscClose.Text = "(ESC) Close"
         btnEscClose.AutoSize = False
@@ -126,7 +126,7 @@ Public Class DosMenuFormBase
             .BackColor = _bgDarkGray,
             .Margin = New Padding(0)
         }
-        root.RowStyles.Add(New RowStyle(SizeType.AutoSize)) ' header row
+        root.RowStyles.Add(New RowStyle(SizeType.Absolute, 60.0F)) ' header row - extended to 60px for more black
         root.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F)) ' body
 
         ' Header row: title left, clock right (same line)
@@ -136,22 +136,22 @@ Public Class DosMenuFormBase
             .ColumnCount = 2,
             .RowCount = 1,
             .Margin = New Padding(0),
-            .Padding = New Padding(8, 6, 8, 6)
+            .Padding = New Padding(8, 0, 8, 0)
         }
         header.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
         header.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
 
         lblMainMenu.AutoSize = True
-        lblMainMenu.Margin = New Padding(0)
+        lblMainMenu.Margin = New Padding(0, -4, 0, -4)  ' Negative margin to reduce height
         UiTheme.ApplyDosTitleStyle(lblMainMenu)
 
         lblDateTime.AutoSize = False
         lblDateTime.Dock = DockStyle.Fill
         lblDateTime.TextAlign = ContentAlignment.MiddleRight
-        lblDateTime.Font = New Font("Segoe UI", 12.0F, FontStyle.Bold, GraphicsUnit.Point)
+        lblDateTime.Font = New Font("Segoe UI", 10.0F, FontStyle.Bold, GraphicsUnit.Point)
         lblDateTime.ForeColor = Color.Yellow
         lblDateTime.BackColor = _bgBlack
-        lblDateTime.Margin = New Padding(0)
+        lblDateTime.Margin = New Padding(0, -4, 0, -4)  ' Negative margin to reduce height
         lblDateTime.Padding = New Padding(0)
 
         header.Controls.Add(lblMainMenu, 0, 0)
@@ -194,7 +194,7 @@ Public Class DosMenuFormBase
         panel.AutoScroll = True
         panel.BackColor = bg
         panel.Padding = New Padding(0)
-        panel.Margin = New Padding(0, 10, 0, 0)
+        panel.Margin = New Padding(0)  ' Reset to no margin - forms can override
     End Sub
 
     Protected Sub SetMenuTitle(title As String)
@@ -266,6 +266,11 @@ Public Class DosMenuFormBase
     End Sub
 
     Private Sub OnBaseKeyPress(sender As Object, e As KeyPressEventArgs)
+        ' Don't process hotkeys if a text input control has focus
+        If IsTextInputActive() Then
+            Return
+        End If
+
         ' ESC
         If e.KeyChar = ChrW(27) Then
             Dim escAct As Action = Nothing
@@ -303,8 +308,53 @@ Public Class DosMenuFormBase
                            now.ToString("hh:mm:ss tt")
     End Sub
 
+    ''' <summary>
+    ''' Checks if a text input control currently has focus.
+    ''' Returns True if the active control is a TextBox, RichTextBox, MaskedTextBox, or ComboBox.
+    ''' This prevents hotkeys from firing while the user is typing in a text field.
+    ''' </summary>
+    Private Function IsTextInputActive() As Boolean
+        Dim activeCtrl As Control = Me.ActiveControl
+
+        ' Check if active control is a text input type
+        If TypeOf activeCtrl Is TextBox OrElse
+           TypeOf activeCtrl Is RichTextBox OrElse
+           TypeOf activeCtrl Is MaskedTextBox OrElse
+           TypeOf activeCtrl Is ComboBox Then
+            Return True
+        End If
+
+        ' Check if active control is within a container that has a focused text input
+        ' This handles cases where the TextBox is inside a Panel or other container
+        If activeCtrl IsNot Nothing Then
+            Dim focused As Control = FindFocusedControl(activeCtrl)
+            If focused IsNot Nothing AndAlso focused IsNot activeCtrl Then
+                If TypeOf focused Is TextBox OrElse
+                   TypeOf focused Is RichTextBox OrElse
+                   TypeOf focused Is MaskedTextBox OrElse
+                   TypeOf focused Is ComboBox Then
+                    Return True
+                End If
+            End If
+        End If
+
+        Return False
+    End Function
+
+    ''' <summary>
+    ''' Recursively finds the deepest focused control within a container.
+    ''' </summary>
+    Private Function FindFocusedControl(parent As Control) As Control
+        Dim container As ContainerControl = TryCast(parent, ContainerControl)
+        If container IsNot Nothing AndAlso container.ActiveControl IsNot Nothing Then
+            Return FindFocusedControl(container.ActiveControl)
+        End If
+        Return parent
+    End Function
+
     Protected Sub NotYet(feature As String)
         MessageBox.Show("Not implemented yet: " & feature, "Port status", MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
+
 
 End Class

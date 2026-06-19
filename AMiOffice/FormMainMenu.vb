@@ -337,7 +337,9 @@ Partial Public Class FormMainMenu
                 StartLogBookYearPrompt()
 
             Case "F"
-                NotYet("Price List Program (plist)")
+                Using f As New FormPriceList()
+                    f.ShowDialog(Me)
+                End Using
 
             Case "G"
                 NotYet("Print/Void Invoices (BOOT)")

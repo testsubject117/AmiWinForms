@@ -13,7 +13,8 @@ Public NotInheritable Class LegacyDataPaths
 
     ' Ed Dean's Personal Backup destination (Option Y)
     ' DOS used D: drive, modernized to UNC path
-    Public Shared ReadOnly Property PersonalBackupPath As String = "\\192.168.1.3\Shared\EdDeanBU"
+    ' Production path: \\192.168.1.176\EdDeanBU
+    Public Shared ReadOnly Property PersonalBackupPath As String = "\\192.168.1.176\EdDeanBU"
 
     Public Shared ReadOnly Property LedgerCur As String =
         Path.Combine(BaseDataDir, "LEDGER.CUR")
