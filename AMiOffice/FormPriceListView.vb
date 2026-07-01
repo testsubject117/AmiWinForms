@@ -30,6 +30,34 @@ Public Class FormPriceListView
         Me.ForeColor = Color.FromArgb(170, 170, 170)
         Me.Font = New Font("Consolas", 10.0F, FontStyle.Regular)
 
+        ' Bottom panel for close button (add first for correct dock order)
+        Dim pnlBottom As New Panel()
+        pnlBottom.Dock = DockStyle.Bottom
+        pnlBottom.Height = 35
+        pnlBottom.BackColor = Color.Black
+
+        Dim btnClose As New Button()
+        btnClose.Text = "(ESC) Close"
+        btnClose.AutoSize = False
+        btnClose.Width = 160
+        btnClose.Height = 30
+        btnClose.Font = New Font("Segoe UI", 10.0F, FontStyle.Bold, GraphicsUnit.Point)
+        btnClose.UseVisualStyleBackColor = False
+        btnClose.BackColor = Color.Silver
+        btnClose.ForeColor = Color.Black
+        btnClose.FlatStyle = FlatStyle.Flat
+        btnClose.FlatAppearance.BorderColor = Color.Gainsboro
+        btnClose.FlatAppearance.MouseOverBackColor = Color.Gainsboro
+        btnClose.FlatAppearance.MouseDownBackColor = Color.DarkGray
+        btnClose.FlatAppearance.BorderSize = 1
+        btnClose.Anchor = AnchorStyles.Bottom Or AnchorStyles.Right
+        btnClose.Left = pnlBottom.ClientSize.Width - btnClose.Width
+        btnClose.Top = pnlBottom.Height - btnClose.Height
+        AddHandler btnClose.Click, Sub() Me.Close()
+        AddHandler pnlBottom.Resize, Sub() btnClose.Left = pnlBottom.Width - btnClose.Width
+        pnlBottom.Controls.Add(btnClose)
+        Me.Controls.Add(pnlBottom)
+
         ' Title label
         Dim lblTitle As New Label()
         lblTitle.Dock = DockStyle.Top
@@ -39,7 +67,7 @@ Public Class FormPriceListView
         lblTitle.Text = "PRICE LIST"
         Me.Controls.Add(lblTitle)
 
-        ' DataGridView
+        ' DataGridView (added last so DockStyle.Fill works correctly)
         _dataGridView = New DataGridView()
         _dataGridView.Dock = DockStyle.Fill
         _dataGridView.ReadOnly = True
@@ -63,18 +91,7 @@ Public Class FormPriceListView
         _dataGridView.EnableHeadersVisualStyles = False
 
         Me.Controls.Add(_dataGridView)
-
-        ' Close button
-        Dim btnClose As New Button()
-        btnClose.Dock = DockStyle.Bottom
-        btnClose.Height = 40
-        btnClose.Text = "[Q] Close"
-        btnClose.BackColor = Color.FromArgb(40, 40, 40)
-        btnClose.ForeColor = Color.FromArgb(170, 170, 170)
-        btnClose.FlatStyle = FlatStyle.Flat
-        btnClose.Font = New Font("Consolas", 10.0F, FontStyle.Regular)
-        AddHandler btnClose.Click, Sub() Me.Close()
-        Me.Controls.Add(btnClose)
+        _dataGridView.BringToFront()
 
         ' ESC/Q to close
         Me.KeyPreview = True
@@ -97,11 +114,11 @@ Public Class FormPriceListView
 
         For Each proc In procedures
             Dim procType = proc.GetType()
-            Dim procName = procType.GetProperty("ProcedureName").GetValue(proc, Nothing).ToString()
-            Dim effDate = procType.GetProperty("EffectiveDate").GetValue(proc, Nothing).ToString()
-            Dim minCharge = CDec(procType.GetProperty("MinCharge").GetValue(proc, Nothing))
-            Dim price = CDec(procType.GetProperty("Price").GetValue(proc, Nothing))
-            Dim priceType = procType.GetProperty("PriceType").GetValue(proc, Nothing).ToString()
+            Dim procName = procType.GetField("ProcedureName").GetValue(proc).ToString()
+            Dim effDate = procType.GetField("EffectiveDate").GetValue(proc).ToString()
+            Dim minCharge = CDec(procType.GetField("MinCharge").GetValue(proc))
+            Dim price = CDec(procType.GetField("Price").GetValue(proc))
+            Dim priceType = procType.GetField("PriceType").GetValue(proc).ToString()
 
             dt.Rows.Add(procName, effDate, minCharge.ToString("C"), price.ToString("C") & priceType)
         Next

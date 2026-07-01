@@ -212,6 +212,12 @@ Public Class DosMenuFormBase
         _keyHandlers("ESC") = esc
     End Sub
 
+    Protected Sub RegisterHotkey(key As String, handler As Action)
+        If Not String.IsNullOrWhiteSpace(key) Then
+            _keyHandlers(key) = handler
+        End If
+    End Sub
+
     Protected Sub AddMenuButton(panel As FlowLayoutPanel, key As String, text As String, handler As Action)
         Dim btn As New Button()
 

@@ -376,6 +376,9 @@ Public Class FormPriceList
 
         AddHandler btn.Click, Sub() handler()
 
+        ' Register hotkey (base class handles text-input protection)
+        RegisterHotkey(key, handler)
+
         ' Size to panel width leaving only padding space
         If StretchButtonsToPanelWidth Then
             btn.Width = panel.ClientSize.Width - panel.Padding.Left - panel.Padding.Right
@@ -398,7 +401,85 @@ Public Class FormPriceList
     End Sub
 
     Private Sub PrintProcedures()
-        NotYet("Print procedures to printer")
+        ' (B) Print procedures to printer
+        If Not LoadProcedures() Then Return
+
+        If _procedures.Count = 0 Then
+            MessageBox.Show("No procedures to print.", "No Data",
+                           MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
+
+        Try
+            ' Create print document with tighter margins
+            Dim printDoc As New System.Drawing.Printing.PrintDocument()
+            printDoc.DefaultPageSettings.Margins = New System.Drawing.Printing.Margins(50, 50, 50, 50)
+            Dim currentIndex = 0
+            Dim pageNum = 0
+
+            AddHandler printDoc.PrintPage, Sub(sender, e)
+                                                pageNum += 1
+                                                Dim font As New Font("Courier New", 11)
+                                                Dim boldFont As New Font("Courier New", 12, FontStyle.Bold)
+                                                Dim x As Single = e.MarginBounds.Left
+                                                Dim y As Single = e.MarginBounds.Top
+                                                Dim lineHeight = font.GetHeight(e.Graphics)
+                                                Dim pageWidth = e.MarginBounds.Width
+
+                                                ' Column positions based on page width
+                                                Dim colProcedure = x
+                                                Dim colEftDate = x + CSng(pageWidth * 0.35)
+                                                Dim colMinCharge = x + CSng(pageWidth * 0.55)
+                                                Dim colPrice = x + CSng(pageWidth * 0.75)
+
+                                                ' Title
+                                                e.Graphics.DrawString("****** " & _currentCustomer & " ******    PAGE " & pageNum.ToString(), boldFont,
+                                      Brushes.Black, x, y)
+                                                y += lineHeight * 2
+
+                                                ' Column headers
+                                                e.Graphics.DrawString("PROCEDURE", boldFont, Brushes.Black, colProcedure, y)
+                                                e.Graphics.DrawString("EFT DATE", boldFont, Brushes.Black, colEftDate, y)
+                                                e.Graphics.DrawString("MIN. CHARGE", boldFont, Brushes.Black, colMinCharge, y)
+                                                e.Graphics.DrawString("PRICE", boldFont, Brushes.Black, colPrice, y)
+                                                y += lineHeight * 1.5
+
+                                                ' Separator line
+                                                e.Graphics.DrawString(New String("="c, 72), font, Brushes.Black, x, y)
+                                                y += lineHeight
+
+                                                ' Print procedures
+                                                While currentIndex < _procedures.Count AndAlso y + lineHeight < e.MarginBounds.Bottom
+                                                    Dim proc = _procedures(currentIndex)
+                                                    e.Graphics.DrawString(proc.ProcedureName, font, Brushes.Black, colProcedure, y)
+                                                    e.Graphics.DrawString(proc.EffectiveDate, font, Brushes.Black, colEftDate, y)
+                                                    e.Graphics.DrawString("$ " & proc.MinCharge.ToString("F4"), font, Brushes.Black, colMinCharge, y)
+                                                    e.Graphics.DrawString("$ " & proc.Price.ToString("F4") & proc.PriceType, font, Brushes.Black, colPrice, y)
+                                                    y += lineHeight
+                                                    currentIndex += 1
+                                                End While
+
+                                                ' Footer on last page
+                                                If currentIndex >= _procedures.Count Then
+                                                    y += lineHeight
+                                                    e.Graphics.DrawString("Total: " & _procedures.Count & " procedures", boldFont,
+                                          Brushes.Black, x, y)
+                                                End If
+
+                                                e.HasMorePages = (currentIndex < _procedures.Count)
+                                            End Sub
+
+            ' Show print dialog
+            Dim printDialog As New PrintDialog()
+            printDialog.Document = printDoc
+            If printDialog.ShowDialog() = DialogResult.OK Then
+                printDoc.Print()
+            End If
+
+        Catch ex As Exception
+            MessageBox.Show("Error printing procedures: " & ex.Message, "Error",
+                           MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub AddProcedure()
@@ -412,7 +493,69 @@ Public Class FormPriceList
     End Sub
 
     Private Sub DeleteProcedure()
-        NotYet("Delete procedure")
+        ' (D) Delete procedure
+        If Not LoadProcedures() Then Return
+
+        If _procedures.Count = 0 Then
+            MessageBox.Show("No procedures to delete.", "No Data",
+                           MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
+
+        Dim search = Microsoft.VisualBasic.Interaction.InputBox(
+            "Enter procedure name to delete:",
+            "Delete Procedure", "")
+
+        If String.IsNullOrEmpty(search) Then Return
+
+        search = search.ToUpperInvariant()
+        Dim matches = _procedures.Where(Function(p) p.ProcedureName.ToUpperInvariant().Contains(search)).ToList()
+
+        If matches.Count = 0 Then
+            MessageBox.Show("Procedure not found.", "Not Found",
+                           MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
+
+        If matches.Count > 1 Then
+            Dim msg As New System.Text.StringBuilder()
+            msg.AppendLine("Multiple matches found. Please be more specific:")
+            msg.AppendLine()
+            For Each proc In matches
+                msg.AppendLine("  " & proc.ProcedureName)
+            Next
+            MessageBox.Show(msg.ToString(), "Multiple Matches",
+                           MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
+
+        Dim toDelete = matches(0)
+        Dim result = MessageBox.Show(
+            "Delete this procedure?" & vbCrLf & vbCrLf &
+            "PROCEDURE: " & toDelete.ProcedureName & vbCrLf &
+            "MIN CHARGE: " & toDelete.MinCharge.ToString("C") & vbCrLf &
+            "PRICE: " & toDelete.Price.ToString("C") & toDelete.PriceType,
+            "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+
+        If result <> DialogResult.Yes Then Return
+
+        Try
+            _procedures.Remove(toDelete)
+
+            ' Save the updated list
+            Using writer As New StreamWriter(_priceListFile, False)
+                For Each proc In _procedures
+                    writer.WriteLine($"""{proc.ProcedureName}"",""{proc.EffectiveDate}"",{proc.MinCharge},{proc.Price},""{proc.PriceType}""")
+                Next
+            End Using
+
+            MessageBox.Show("Procedure deleted successfully.", "Success",
+                           MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+        Catch ex As Exception
+            MessageBox.Show("Error deleting procedure: " & ex.Message, "Error",
+                           MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub ChangeCustomer()
@@ -571,15 +714,138 @@ Public Class FormPriceList
     ' ============================================================================
 
     Private Sub PrintCustomersList()
-        NotYet("Print all customers to printer")
+        ' (G) Print all customers to printer
+        Try
+            Dim prcDir = Path.Combine(LegacyDataPaths.BaseDataDir, "PRC")
+            If Not Directory.Exists(prcDir) Then
+                MessageBox.Show("No price list directory found.", "Not Found",
+                               MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Return
+            End If
+
+            Dim files = Directory.GetFiles(prcDir, "*.PRC")
+            If files.Length = 0 Then
+                MessageBox.Show("No customer price lists found.", "No Customers",
+                               MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Return
+            End If
+
+            Dim customers = files.Select(Function(f) Path.GetFileNameWithoutExtension(f)).OrderBy(Function(c) c).ToList()
+
+            ' Create print document
+            Dim printDoc As New System.Drawing.Printing.PrintDocument()
+            Dim customerList = customers
+            Dim currentIndex = 0
+
+            AddHandler printDoc.PrintPage, Sub(sender, e)
+                                               Dim font As New Font("Courier New", 10)
+                                               Dim y As Single = e.MarginBounds.Top
+                                               Dim lineHeight = font.GetHeight(e.Graphics)
+
+                                               ' Title
+                                               e.Graphics.DrawString("Customer Price Lists", New Font("Courier New", 12, FontStyle.Bold),
+                                     Brushes.Black, e.MarginBounds.Left, y)
+                                               y += lineHeight * 2
+
+                                               ' Print customers
+                                               While currentIndex < customerList.Count AndAlso y + lineHeight < e.MarginBounds.Bottom
+                                                   e.Graphics.DrawString(customerList(currentIndex), font, Brushes.Black, e.MarginBounds.Left, y)
+                                                   y += lineHeight
+                                                   currentIndex += 1
+                                               End While
+
+                                               ' Footer
+                                               If currentIndex >= customerList.Count Then
+                                                   y += lineHeight
+                                                   e.Graphics.DrawString("Total: " & customerList.Count & " customers", font,
+                                         Brushes.Black, e.MarginBounds.Left, y)
+                                               End If
+
+                                               e.HasMorePages = (currentIndex < customerList.Count)
+                                           End Sub
+
+            ' Show print dialog
+            Dim printDialog As New PrintDialog()
+            printDialog.Document = printDoc
+            If printDialog.ShowDialog() = DialogResult.OK Then
+                printDoc.Print()
+            End If
+
+        Catch ex As Exception
+            MessageBox.Show("Error printing customers: " & ex.Message, "Error",
+                           MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub SortPriceList()
-        NotYet("Sort price list for " & _currentCustomer)
+        ' (H) Sort price list for current customer
+        If String.IsNullOrEmpty(_currentCustomer) Then
+            MessageBox.Show("No customer selected.", "Error",
+                           MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+
+        If Not LoadProcedures() Then Return
+
+        If _procedures.Count = 0 Then
+            MessageBox.Show("No procedures to sort.", "No Data",
+                           MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
+
+        Try
+            ' Sort by procedure name
+            _procedures = _procedures.OrderBy(Function(p) p.ProcedureName).ToList()
+
+            ' Save sorted list
+            Using writer As New StreamWriter(_priceListFile, False)
+                For Each proc In _procedures
+                    writer.WriteLine($"""{proc.ProcedureName}"",""{proc.EffectiveDate}"",{proc.MinCharge},{proc.Price},""{proc.PriceType}""")
+                Next
+            End Using
+
+            MessageBox.Show("Price list for " & _currentCustomer & " has been sorted.", "Success",
+                           MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+        Catch ex As Exception
+            MessageBox.Show("Error sorting price list: " & ex.Message, "Error",
+                           MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub ErasePriceList()
-        NotYet("Erase entire price list for " & _currentCustomer)
+        ' (J) Erase entire price list - delete customer's .PRC file
+        If String.IsNullOrEmpty(_currentCustomer) Then
+            MessageBox.Show("No customer selected.", "Error",
+                           MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+
+        Dim result = MessageBox.Show(
+            "Are you SURE you want to ERASE the entire price list for:" & vbCrLf & vbCrLf &
+            _currentCustomer & vbCrLf & vbCrLf &
+            "This cannot be undone!",
+            "Confirm Erase", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
+
+        If result <> DialogResult.Yes Then Return
+
+        Try
+            If File.Exists(_priceListFile) Then
+                File.Delete(_priceListFile)
+                MessageBox.Show("Price list for " & _currentCustomer & " has been erased.",
+                               "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                _currentCustomer = ""
+                _priceListFile = ""
+                _procedures.Clear()
+                Me.Close()
+            Else
+                MessageBox.Show("Price list file not found.", "Not Found",
+                               MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
+        Catch ex As Exception
+            MessageBox.Show("Error erasing price list: " & ex.Message, "Error",
+                           MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
 
     Private Sub IncreasePricesByPercent()

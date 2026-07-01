@@ -108,6 +108,9 @@
     <Compile Remove="BuildInfo.g.vb" />
     <Compile Remove="$(BuildInfoFile)" />
     <Compile Remove="FormMiscMenu.Designer.vb" />
+    <Compile Remove="InvoiceChkScanner.vb" />
+    <Compile Remove="InvoiceChkComparisonTool.vb" />
+    <Compile Remove="InvoiceChkScannerTest.vb" />
   </ItemGroup>
 
   <ItemGroup>
