@@ -1,4 +1,4 @@
-ï»¿Option Strict On
+Option Strict On
 Option Explicit On
 
 Imports System
@@ -236,7 +236,7 @@ Public Class FormMileageTracking
         row2.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
 
         _txtMiles = New TextBox() With {.Dock = DockStyle.Fill}
-        _lblMilesHint = New Label() With {.AutoSize = True, .Font = UiTheme.CreateDosFont(12.0F, FontStyle.Bold), .Text = "Miles: â€”", .Padding = New Padding(8, 7, 8, 7)}
+        _lblMilesHint = New Label() With {.AutoSize = True, .Font = UiTheme.CreateDosFont(12.0F, FontStyle.Bold), .Text = "Miles: —", .Padding = New Padding(8, 7, 8, 7)}
 
         _cmbPayment = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Dock = DockStyle.Fill}
         _cmbPayment.Items.Add("Cash")
@@ -343,7 +343,7 @@ Public Class FormMileageTracking
                 _lblMilesHint.Text = "Miles: (end < start)"
             End If
         Else
-            _lblMilesHint.Text = "Miles: â€”"
+            _lblMilesHint.Text = "Miles: —"
         End If
     End Sub
 

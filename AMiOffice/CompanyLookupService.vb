@@ -1,4 +1,4 @@
-﻿Option Strict Off
+Option Strict Off
 Option Explicit On
 
 Imports System.IO
@@ -140,3 +140,4 @@ Public Class CompanyLookupService
     End Function
 
 End Class
+

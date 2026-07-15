@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 Option Explicit On
 
 Imports System
@@ -191,7 +191,7 @@ Public Class FormDeleteCheck
             Next
 
             If matches.Count = 0 Then
-                MessageBox.Show("Check not found.", "Delete Check", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                DosMessageBox.Show(Me, "Check not found.", "Delete Check", MessageBoxButtons.OK)
                 txtInput.SelectAll()
                 txtInput.Focus()
                 Return

@@ -1,4 +1,4 @@
-﻿Option Strict Off
+Option Strict Off
 Option Explicit On
 
 Public Class CompanyInfo
@@ -6,3 +6,4 @@ Public Class CompanyInfo
     Public Property PrcFileName As String
     Public Property CompanyName As String
 End Class
+

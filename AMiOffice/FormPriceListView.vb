@@ -133,3 +133,4 @@ Public Class FormPriceListView
         End If
     End Sub
 End Class
+

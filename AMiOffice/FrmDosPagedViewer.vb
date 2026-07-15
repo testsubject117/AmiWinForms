@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 Option Explicit On
 
 Imports System
@@ -400,13 +400,13 @@ Public Class FrmDosPagedViewer
     Private Sub OnPaintTopBar(sender As Object, e As PaintEventArgs)
         If Not _searchMode Then Return
 
-        ' DOS cyan bar: "04-01-<6 14:00 ♦ LOGBOOK.26" (centered)
+        ' DOS cyan bar: "04-01-<6 14:00 ? LOGBOOK.26" (centered)
         Dim g As Graphics = e.Graphics
         g.Clear(Color.Cyan)
 
         Dim dateTimeStr As String = DateTime.Now.ToString("MM-dd-<yy HH:mm")
         Dim fileNameStr As String = If(String.IsNullOrEmpty(_searchFileName), "LOGBOOK.??", _searchFileName)
-        Dim fullText As String = $"{dateTimeStr} ♦ {fileNameStr}"
+        Dim fullText As String = $"{dateTimeStr} ? {fileNameStr}"
 
         Using brush As New SolidBrush(Color.Black)
             Using font As New Font("Consolas", 10.0F, FontStyle.Bold)

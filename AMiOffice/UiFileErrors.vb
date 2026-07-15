@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 Option Explicit On
 
 Imports System.Windows.Forms
@@ -6,22 +6,20 @@ Imports System.Windows.Forms
 Public Module UiFileErrors
 
     Public Sub ShowMissingRequiredFile(owner As IWin32Window, screenTitle As String, path As String)
-        MessageBox.Show(owner,
+        DosMessageBox.Show(owner,
                         "Required data file was not found:" & Environment.NewLine &
                         path,
                         screenTitle,
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error)
+                        MessageBoxButtons.OK)
     End Sub
 
     Public Sub ShowUnableToReadRequiredFile(owner As IWin32Window, screenTitle As String, path As String, ex As Exception)
-        MessageBox.Show(owner,
+        DosMessageBox.Show(owner,
                         "Unable to read required data file:" & Environment.NewLine &
                         path & Environment.NewLine & Environment.NewLine &
                         ex.Message,
                         screenTitle,
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error)
+                        MessageBoxButtons.OK)
     End Sub
 
 End Module

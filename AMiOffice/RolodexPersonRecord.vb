@@ -1,4 +1,4 @@
-﻿Public Class RolodexPersonRecord
+Public Class RolodexPersonRecord
     Public Property PersonName As String = ""
     Public Property Street As String = ""
     Public Property City As String = ""
@@ -29,3 +29,4 @@
         Return raw
     End Function
 End Class
+

@@ -1,4 +1,4 @@
-﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
+<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
 Partial Class FrmRolodexMenu
     Inherits System.Windows.Forms.Form
 
@@ -28,3 +28,4 @@ Partial Class FrmRolodexMenu
         Me.Text = "FrmRolodexMenu"
     End Sub
 End Class
+

@@ -1,4 +1,4 @@
-﻿Public Enum RolodexMenuInlineMode
+Public Enum RolodexMenuInlineMode
     None
     PrintPhoneBook_CustomersOnly
     PrintPhoneBook_HighQuality
@@ -8,3 +8,4 @@
     ErrorCheck_Running
     AreaCodes_Prompt
 End Enum
+

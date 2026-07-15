@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 Option Explicit On
 
 Imports System
@@ -58,3 +58,4 @@ Public NotInheritable Class CheckRepository
     End Function
 
 End Class
+

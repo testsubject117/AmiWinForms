@@ -1,4 +1,4 @@
-﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
+<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
 Partial Class FrmPagedTextViewer
     Inherits System.Windows.Forms.Form
 
@@ -28,3 +28,4 @@ Partial Class FrmPagedTextViewer
         Me.Text = "FrmPagedTextViewer"
     End Sub
 End Class
+

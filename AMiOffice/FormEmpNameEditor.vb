@@ -1,4 +1,4 @@
-﻿Option Strict Off
+Option Strict Off
 Option Explicit On
 
 Imports System
@@ -117,17 +117,15 @@ Public Class FormEmpNameEditor
                 _txt.Text = File.ReadAllText(_filePath)
             Else
                 _txt.Text = ""
-                MessageBox.Show("File not found:" & Environment.NewLine & _filePath,
+                DosMessageBox.Show(Me, "File not found:" & Environment.NewLine & _filePath,
                                 "EMPNAME.DAT",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Warning)
+                                MessageBoxButtons.OK)
             End If
             _dirty = False
         Catch ex As Exception
-            MessageBox.Show("Failed to load file:" & Environment.NewLine & _filePath & Environment.NewLine & Environment.NewLine & ex.Message,
+            DosMessageBox.Show(Me, "Failed to load file:" & Environment.NewLine & _filePath & Environment.NewLine & Environment.NewLine & ex.Message,
                             "EMPNAME.DAT",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Error)
+                            MessageBoxButtons.OK)
         Finally
             _loading = False
         End Try
@@ -195,12 +193,11 @@ Public Class FormEmpNameEditor
             File.WriteAllText(_filePath, _txt.Text)
 
             _dirty = False
-            MessageBox.Show("Saved: " & _filePath, "EMPNAME.DAT", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            DosMessageBox.Show(Me, "Saved: " & _filePath, "EMPNAME.DAT", MessageBoxButtons.OK)
         Catch ex As Exception
-            MessageBox.Show("Failed to save file:" & Environment.NewLine & _filePath & Environment.NewLine & Environment.NewLine & ex.Message,
+            DosMessageBox.Show(Me, "Failed to save file:" & Environment.NewLine & _filePath & Environment.NewLine & Environment.NewLine & ex.Message,
                             "EMPNAME.DAT",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Error)
+                            MessageBoxButtons.OK)
         Finally
             _loading = False
         End Try
@@ -208,11 +205,9 @@ Public Class FormEmpNameEditor
 
     Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
         If _dirty Then
-            Dim dr = MessageBox.Show("You have unsaved changes. Close anyway?",
+            Dim dr = DosMessageBox.Show(Me, "You have unsaved changes. Close anyway?",
                                      "EMPNAME.DAT",
-                                     MessageBoxButtons.YesNo,
-                                     MessageBoxIcon.Warning,
-                                     MessageBoxDefaultButton.Button2)
+                                     MessageBoxButtons.YesNo)
             If dr <> DialogResult.Yes Then
                 e.Cancel = True
                 Return

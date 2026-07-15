@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 Option Explicit On
 
 Imports System.Globalization
@@ -234,7 +234,7 @@ Public Class FormOtherChecksView
 
         Dim beginDate As Date
         If Not TryParseDosDateInput(txtBeginDate.Text.Trim(), DefaultBeginDateText, beginDate) Then
-            MessageBox.Show(Me, "Beginning date must be in MM-dd-yyyy format, or enter 1 for 01-01-1988.", "Invalid Beginning Date", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            DosMessageBox.Show(Me, "Beginning date must be in MM-dd-yyyy format, or enter 1 for 01-01-1988.", "Invalid Beginning Date", MessageBoxButtons.OK)
             txtBeginDate.Focus()
             txtBeginDate.SelectAll()
             Return
@@ -242,7 +242,7 @@ Public Class FormOtherChecksView
 
         Dim endDate As Date
         If Not TryParseDosDateInput(txtEndDate.Text.Trim(), Date.Today.ToString("MM-dd-yyyy", CultureInfo.InvariantCulture), endDate) Then
-            MessageBox.Show(Me, "Ending date must be in MM-dd-yyyy format.", "Invalid Ending Date", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            DosMessageBox.Show(Me, "Ending date must be in MM-dd-yyyy format.", "Invalid Ending Date", MessageBoxButtons.OK)
             txtEndDate.Focus()
             txtEndDate.SelectAll()
             Return
@@ -342,3 +342,4 @@ Public Class FormOtherChecksView
     End Function
 
 End Class
+

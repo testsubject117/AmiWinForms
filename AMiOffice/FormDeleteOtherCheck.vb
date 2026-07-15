@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 Option Explicit On
 
 Imports System.Drawing
@@ -151,7 +151,7 @@ Public Class FormDeleteOtherCheck
         End If
 
         If checkNumber = "" Then
-            MessageBox.Show(Me, "Enter a check number.", ScreenTitle, MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            DosMessageBox.Show(Me, "Enter a check number.", ScreenTitle, MessageBoxButtons.OK)
             txtCheckNumber.Focus()
             Return
         End If
@@ -162,8 +162,8 @@ Public Class FormDeleteOtherCheck
         Try
             allEntries = OtherChkReader.ReadAll(path)
         Catch ex As Exception
-            MessageBox.Show(Me, "Unable to read OTHER.CHK." & Environment.NewLine & Environment.NewLine & ex.Message,
-                            ScreenTitle, MessageBoxButtons.OK, MessageBoxIcon.Error)
+            DosMessageBox.Show(Me, "Unable to read OTHER.CHK." & Environment.NewLine & Environment.NewLine & ex.Message,
+                            ScreenTitle, MessageBoxButtons.OK)
             Return
         End Try
 
@@ -173,7 +173,7 @@ Public Class FormDeleteOtherCheck
                                                                 StringComparison.OrdinalIgnoreCase))
 
         If _matchedEntry Is Nothing Then
-            MessageBox.Show(Me, "Check not found.", ScreenTitle, MessageBoxButtons.OK, MessageBoxIcon.Information)
+            DosMessageBox.Show(Me, "Check not found.", ScreenTitle, MessageBoxButtons.OK)
             ClearMatch()
             Return
         End If
@@ -198,7 +198,7 @@ Public Class FormDeleteOtherCheck
             Return
         End If
 
-        Dim confirm = MessageBox.Show(Me,
+        Dim confirm = DosMessageBox.Show(Me,
                                       "Delete this check?",
                                       ScreenTitle,
                                       MessageBoxButtons.YesNo,
@@ -227,13 +227,13 @@ Public Class FormDeleteOtherCheck
 
             OtherChkWriter.WriteAll(path, remaining)
 
-            MessageBox.Show(Me, "Check deleted.", ScreenTitle, MessageBoxButtons.OK, MessageBoxIcon.Information)
+            DosMessageBox.Show(Me, "Check deleted.", ScreenTitle, MessageBoxButtons.OK)
             txtCheckNumber.Text = ""
             ClearMatch()
             txtCheckNumber.Focus()
         Catch ex As Exception
-            MessageBox.Show(Me, "Unable to update OTHER.CHK." & Environment.NewLine & Environment.NewLine & ex.Message,
-                            ScreenTitle, MessageBoxButtons.OK, MessageBoxIcon.Error)
+            DosMessageBox.Show(Me, "Unable to update OTHER.CHK." & Environment.NewLine & Environment.NewLine & ex.Message,
+                            ScreenTitle, MessageBoxButtons.OK)
         End Try
     End Sub
 
@@ -261,3 +261,4 @@ Public Class FormDeleteOtherCheck
                String.Equals(If(a.ReasonWhy, "").Trim(), If(b.ReasonWhy, "").Trim(), StringComparison.OrdinalIgnoreCase)
     End Function
 End Class
+

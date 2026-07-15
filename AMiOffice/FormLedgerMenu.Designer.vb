@@ -1,4 +1,4 @@
-﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>
+<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>
 Partial Class FormLedgerMenu
     Inherits DosMenuFormBase
 
@@ -28,3 +28,4 @@ Partial Class FormLedgerMenu
         Me.Text = "FormLedgerMenu"
     End Sub
 End Class
+

@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 Option Explicit On
 
 Imports System.Collections.Generic
@@ -154,3 +154,4 @@ Public Class ActualCustomerNamesService
     End Function
 
 End Class
+

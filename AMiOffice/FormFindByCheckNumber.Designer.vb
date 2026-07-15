@@ -1,4 +1,4 @@
-﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
+<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
 Partial Class FormFindByCheckNumber
     Inherits System.Windows.Forms.Form
 
@@ -28,3 +28,4 @@ Partial Class FormFindByCheckNumber
         Me.Text = "FormFindByCheckNumber"
     End Sub
 End Class
+

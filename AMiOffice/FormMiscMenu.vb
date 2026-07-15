@@ -1,4 +1,4 @@
-﻿Option Strict Off
+Option Strict Off
 Option Explicit On
 
 Imports System
@@ -37,6 +37,10 @@ Partial Public Class FormMiscMenu
 
         Dim p = flpLeft
 
+        AddMenuButton(p, "T", "Test Message Box Styles (Old vs New)", Sub()
+                                                                          Dim testForm As New FormMessageBoxTest()
+                                                                          testForm.ShowDialog(Me)
+                                                                      End Sub)
         AddMenuButton(p, "A", "Placeholder Item A - Not Yet Implemented", Sub()
                                                                               NotYet("Placeholder Item A")
                                                                           End Sub)

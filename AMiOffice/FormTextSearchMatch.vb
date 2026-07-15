@@ -207,3 +207,4 @@ Public Class FormTextSearchMatch
         MyBase.Dispose(disposing)
     End Sub
 End Class
+

@@ -1,4 +1,4 @@
-﻿Imports System.Windows.Forms
+Imports System.Windows.Forms
 Imports System.Drawing
 
 <Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>

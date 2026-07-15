@@ -1,4 +1,4 @@
-﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
+<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
 Partial Class FrmRolodexPrompt
     Inherits System.Windows.Forms.Form
 
@@ -28,3 +28,4 @@ Partial Class FrmRolodexPrompt
         Me.Text = "FrmRolodexPrompt"
     End Sub
 End Class
+

@@ -1,4 +1,4 @@
-﻿Option Strict Off
+Option Strict Off
 Option Explicit On
 
 Imports System.IO
@@ -76,7 +76,7 @@ Public Class FormSalesEmployeeCheckWizard
         employees = LoadEmployees(path, usedFallback)
 
         If employees Is Nothing OrElse employees.Count = 0 Then
-            MessageBox.Show(Me,
+            DosMessageBox.Show(Me,
                             "No employees found in EMPNAME.DAT." & vbCrLf &
                             "Path: " & path,
                             Text,
@@ -88,7 +88,7 @@ Public Class FormSalesEmployeeCheckWizard
         End If
 
         If usedFallback Then
-            MessageBox.Show(Me,
+            DosMessageBox.Show(Me,
                             "NOTE: EMPNAME.DAT did not contain any non-indented employee header lines." & vbCrLf &
                             "Using compatibility mode: first non-empty line treated as employee name." & vbCrLf &
                             "Path: " & path,
@@ -174,7 +174,7 @@ Public Class FormSalesEmployeeCheckWizard
         If idx < 0 Then idx = 0
 
         If idx >= employees.Count Then
-            MessageBox.Show(Me, "No employee selected.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information)
+            DosMessageBox.Show(Me, "No employee selected.", Text, MessageBoxButtons.OK)
             DialogResult = DialogResult.Cancel
             Close()
             Return
@@ -272,7 +272,7 @@ Public Class FormSalesEmployeeCheckWizard
         Dim hi As Long
 
         If Not Long.TryParse(txtLow.Text.Trim(), lo) Then
-            MessageBox.Show(Me, "Lowest invoice must be a number.", Text)
+            DosMessageBox.Show(Me, "Lowest invoice must be a number.", Text)
             txtLow.Focus()
             txtLow.SelectAll()
             Return
@@ -284,14 +284,14 @@ Public Class FormSalesEmployeeCheckWizard
         End If
 
         If lo < 150000 Then
-            MessageBox.Show(Me, "Lowest invoice must be >= 150000.", Text)
+            DosMessageBox.Show(Me, "Lowest invoice must be >= 150000.", Text)
             txtLow.Focus()
             txtLow.SelectAll()
             Return
         End If
 
         If Not Long.TryParse(txtHigh.Text.Trim(), hi) Then
-            MessageBox.Show(Me, "Highest invoice must be a number.", Text)
+            DosMessageBox.Show(Me, "Highest invoice must be a number.", Text)
             txtHigh.Focus()
             txtHigh.SelectAll()
             Return
@@ -303,14 +303,14 @@ Public Class FormSalesEmployeeCheckWizard
         End If
 
         If hi < 150000 Then
-            MessageBox.Show(Me, "Highest invoice must be >= 150000.", Text)
+            DosMessageBox.Show(Me, "Highest invoice must be >= 150000.", Text)
             txtHigh.Focus()
             txtHigh.SelectAll()
             Return
         End If
 
         If hi < lo Then
-            MessageBox.Show(Me, "Highest invoice must be >= lowest invoice.", Text)
+            DosMessageBox.Show(Me, "Highest invoice must be >= lowest invoice.", Text)
             txtHigh.Focus()
             txtHigh.SelectAll()
             Return
@@ -363,13 +363,13 @@ Public Class FormSalesEmployeeCheckWizard
         Dim hi As Long = highInv
 
         If emp Is Nothing Then
-            MessageBox.Show(Me, "No employee selected.", Text)
+            DosMessageBox.Show(Me, "No employee selected.", Text)
             ShowStep(1)
             Return
         End If
 
         If Not File.Exists(invoiceChkPath) Then
-            MessageBox.Show(Me,
+            DosMessageBox.Show(Me,
                             "Missing required file:" & vbCrLf & invoiceChkPath,
                             Text,
                             MessageBoxButtons.OK,
@@ -385,7 +385,7 @@ Public Class FormSalesEmployeeCheckWizard
         Dim result As ScanResult = Await Task.Run(Function() ScanInvoices(emp, invoiceChkPath, lo, hi))
 
         If scanCancelled Then
-            MessageBox.Show(Me, "Cancelled.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information)
+            DosMessageBox.Show(Me, "Cancelled.", Text, MessageBoxButtons.OK)
             ShowStep(2)
             Return
         End If
@@ -565,7 +565,7 @@ Public Class FormSalesEmployeeCheckWizard
         usedFallback = False
 
         If Not File.Exists(path) Then
-            MessageBox.Show(Me,
+            DosMessageBox.Show(Me,
                             "Missing required file:" & vbCrLf & path,
                             Text,
                             MessageBoxButtons.OK,
@@ -577,7 +577,7 @@ Public Class FormSalesEmployeeCheckWizard
         Try
             lines = File.ReadAllLines(path)
         Catch ex As Exception
-            MessageBox.Show(Me,
+            DosMessageBox.Show(Me,
                             "Could not read file:" & vbCrLf & path & vbCrLf & vbCrLf & ex.Message,
                             Text,
                             MessageBoxButtons.OK,
@@ -626,3 +626,4 @@ Public Class FormSalesEmployeeCheckWizard
         Return fallbackResult
     End Function
 End Class
+

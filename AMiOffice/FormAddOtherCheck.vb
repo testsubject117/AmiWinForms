@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 Option Explicit On
 
 Imports System.Drawing
@@ -197,13 +197,13 @@ Public Class FormAddOtherCheck
         End If
 
         If company = "" Then
-            MessageBox.Show(Me, "Company Name is required.", ScreenTitle, MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            DosMessageBox.Show(Me, "Company Name is required.", ScreenTitle, MessageBoxButtons.OK)
             txtCompany.Focus()
             Return
         End If
 
         If checkNumber = "" Then
-            MessageBox.Show(Me, "Check # is required.", ScreenTitle, MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            DosMessageBox.Show(Me, "Check # is required.", ScreenTitle, MessageBoxButtons.OK)
             txtCheckNumber.Focus()
             Return
         End If
@@ -215,7 +215,7 @@ Public Class FormAddOtherCheck
         Dim parsedDate As DateTime
         If Not DateTime.TryParse(dateText, CultureInfo.InvariantCulture, DateTimeStyles.None, parsedDate) AndAlso
            Not DateTime.TryParse(dateText, parsedDate) Then
-            MessageBox.Show(Me, "Enter a valid date.", ScreenTitle, MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            DosMessageBox.Show(Me, "Enter a valid date.", ScreenTitle, MessageBoxButtons.OK)
             txtDate.Focus()
             Return
         End If
@@ -223,7 +223,7 @@ Public Class FormAddOtherCheck
         Dim amount As Decimal
         If Not Decimal.TryParse(amountText, NumberStyles.Any, CultureInfo.InvariantCulture, amount) AndAlso
            Not Decimal.TryParse(amountText, NumberStyles.Any, CultureInfo.CurrentCulture, amount) Then
-            MessageBox.Show(Me, "Enter a valid check amount.", ScreenTitle, MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            DosMessageBox.Show(Me, "Enter a valid check amount.", ScreenTitle, MessageBoxButtons.OK)
             txtAmount.Focus()
             Return
         End If
@@ -246,7 +246,7 @@ Public Class FormAddOtherCheck
             "Reason Why: " & entry.ReasonWhy & Environment.NewLine & Environment.NewLine &
             "Add this check?"
 
-        Dim result = MessageBox.Show(Me, confirmText, ScreenTitle, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1)
+        Dim result = DosMessageBox.Show(Me, confirmText, ScreenTitle, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question)
 
         If result <> DialogResult.Yes Then
             Return
@@ -256,11 +256,12 @@ Public Class FormAddOtherCheck
 
         Try
             OtherChkWriter.Append(path, entry)
-            MessageBox.Show(Me, "Check added.", ScreenTitle, MessageBoxButtons.OK, MessageBoxIcon.Information)
+            DosMessageBox.Show(Me, "Check added.", ScreenTitle, MessageBoxButtons.OK)
             ResetForm()
         Catch ex As Exception
-            MessageBox.Show(Me, "Unable to write OTHER.CHK." & Environment.NewLine & Environment.NewLine & ex.Message,
-                            ScreenTitle, MessageBoxButtons.OK, MessageBoxIcon.Error)
+            DosMessageBox.Show(Me, "Unable to write OTHER.CHK." & Environment.NewLine & Environment.NewLine & ex.Message,
+                            ScreenTitle, MessageBoxButtons.OK)
         End Try
     End Sub
 End Class
+

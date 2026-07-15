@@ -1,3 +1,3 @@
-﻿Public Class FormAboutNew
+Public Class FormAboutNew
 
 End Class

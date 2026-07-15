@@ -192,8 +192,8 @@ Public Class FormChangeMenuMessage
             Me.DialogResult = DialogResult.OK
             Me.Close()
         Catch ex As Exception
-            MessageBox.Show("Failed to save message: " & ex.Message, 
-                          "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            DosMessageBox.Show(Me, "Failed to save message: " & ex.Message, 
+                          "Error", MessageBoxButtons.OK)
         End Try
     End Sub
 
@@ -204,8 +204,8 @@ Public Class FormChangeMenuMessage
             Me.DialogResult = DialogResult.OK
             Me.Close()
         Catch ex As Exception
-            MessageBox.Show("Failed to clear message: " & ex.Message, 
-                          "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            DosMessageBox.Show(Me, "Failed to clear message: " & ex.Message, 
+                          "Error", MessageBoxButtons.OK)
         End Try
     End Sub
 
@@ -223,3 +223,5 @@ Public Class FormChangeMenuMessage
         Return MyBase.ProcessCmdKey(msg, keyData)
     End Function
 End Class
+
+

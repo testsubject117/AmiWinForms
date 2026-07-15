@@ -1,4 +1,4 @@
-﻿' LegacyDataPaths.vb  (Add as Class, NOT a form)
+' LegacyDataPaths.vb  (Add as Class, NOT a form)
 Option Strict On
 Option Explicit On
 

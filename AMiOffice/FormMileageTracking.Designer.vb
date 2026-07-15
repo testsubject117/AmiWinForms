@@ -1,4 +1,4 @@
-﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
+<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
 Partial Class FormMileageTracking
     Inherits System.Windows.Forms.Form
 
@@ -28,3 +28,4 @@ Partial Class FormMileageTracking
         Me.Text = "FormMileageTracking"
     End Sub
 End Class
+

@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 Option Explicit On
 
 Imports System
@@ -413,12 +413,12 @@ Public Class FormPersonalCalendar
     Private Function EnsureDataDirExistsFriendly() As Boolean
         Try
             If Directory.Exists(DataDir) Then Return True
-            MessageBox.Show("Personal Calendar cannot open because the data folder is not available:" & Environment.NewLine & DataDir,
-                            "Personal Calendar", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            DosMessageBox.Show(Me, "Personal Calendar cannot open because the data folder is not available:" & Environment.NewLine & DataDir,
+                            "Personal Calendar", MessageBoxButtons.OK)
             Return False
         Catch ex As Exception
-            MessageBox.Show("Personal Calendar cannot access the data folder:" & Environment.NewLine & DataDir & Environment.NewLine & Environment.NewLine & ex.Message,
-                            "Personal Calendar", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            DosMessageBox.Show(Me, "Personal Calendar cannot access the data folder:" & Environment.NewLine & DataDir & Environment.NewLine & Environment.NewLine & ex.Message,
+                            "Personal Calendar", MessageBoxButtons.OK)
             Return False
         End Try
     End Function
@@ -435,8 +435,8 @@ Public Class FormPersonalCalendar
                 File.WriteAllText(PmsNumPath, initLine & Environment.NewLine, Encoding.ASCII)
             End If
         Catch ex As Exception
-            MessageBox.Show("Could not create/open PMS files in:" & Environment.NewLine & DataDir & Environment.NewLine & Environment.NewLine & ex.Message,
-                            "Personal Calendar", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            DosMessageBox.Show(Me, "Could not create/open PMS files in:" & Environment.NewLine & DataDir & Environment.NewLine & Environment.NewLine & ex.Message,
+                            "Personal Calendar", MessageBoxButtons.OK)
             Me.Close()
         End Try
     End Sub
@@ -639,7 +639,7 @@ Public Class FormPersonalCalendar
     Private Sub DeleteSelected()
         If _grid.SelectedRows.Count = 0 Then Return
 
-        If MessageBox.Show($"Delete {_grid.SelectedRows.Count} selected event(s)?",
+        If DosMessageBox.Show(Me, $"Delete {_grid.SelectedRows.Count} selected event(s)?",
                            "Personal Calendar",
                            MessageBoxButtons.YesNo,
                            MessageBoxIcon.Warning) <> DialogResult.Yes Then
@@ -691,7 +691,7 @@ Public Class FormPersonalCalendar
     ' Repair / Audit tool
     ' =========================
     Private Sub RepairDatesPms()
-        If MessageBox.Show("This will re-write DATES.PMS with normalized quoting and MM-dd-yyyy dates, removing blank/bad lines." &
+        If DosMessageBox.Show(Me, "This will re-write DATES.PMS with normalized quoting and MM-dd-yyyy dates, removing blank/bad lines." &
                            Environment.NewLine & Environment.NewLine &
                            "Continue?",
                            "Repair DATES.PMS",
@@ -711,9 +711,9 @@ Public Class FormPersonalCalendar
             LoadAllData()
             BindGrid()
 
-            MessageBox.Show("DATES.PMS repair complete.", "Repair DATES.PMS", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            DosMessageBox.Show(Me, "DATES.PMS repair complete.", "Repair DATES.PMS", MessageBoxButtons.OK)
         Catch ex As Exception
-            MessageBox.Show("Repair failed: " & ex.Message, "Repair DATES.PMS", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            DosMessageBox.Show(Me, "Repair failed: " & ex.Message, "Repair DATES.PMS", MessageBoxButtons.OK)
         End Try
     End Sub
 
@@ -731,7 +731,7 @@ Public Class FormPersonalCalendar
 
             action()
         Catch ex As IOException
-            MessageBox.Show($"{friendlyName} is currently in use by another user." & Environment.NewLine &
+            DosMessageBox.Show(Nothing, $"{friendlyName} is currently in use by another user." & Environment.NewLine &
                             "Please try again in a moment.",
                             "Personal Calendar",
                             MessageBoxButtons.OK,
@@ -923,7 +923,7 @@ Public Class FormPersonalCalendar
             AddHandler Me.FormClosing,
                 Sub(sender, e)
                     If Me.DialogResult = DialogResult.OK AndAlso String.IsNullOrWhiteSpace(_txt.Text) Then
-                        MessageBox.Show("Please enter an event description.", "Add an Event", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                        DosMessageBox.Show(Me, "Please enter an event description.", "Add an Event", MessageBoxButtons.OK)
                         e.Cancel = True
                     End If
                 End Sub
@@ -931,3 +931,4 @@ Public Class FormPersonalCalendar
     End Class
 
 End Class
+

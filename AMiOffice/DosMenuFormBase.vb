@@ -1,4 +1,4 @@
-﻿Option Strict Off
+Option Strict Off
 Option Explicit On
 
 Imports System
@@ -359,8 +359,9 @@ Public Class DosMenuFormBase
     End Function
 
     Protected Sub NotYet(feature As String)
-        MessageBox.Show("Not implemented yet: " & feature, "Port status", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        DosMessageBox.Show(Me, "Not implemented yet: " & feature, "Port status", MessageBoxButtons.OK)
     End Sub
 
 
 End Class
+

@@ -1,4 +1,4 @@
-﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
+<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
 Partial Class FormAboutNew
     Inherits System.Windows.Forms.Form
 
@@ -28,3 +28,4 @@ Partial Class FormAboutNew
         Me.Text = "Form1"
     End Sub
 End Class
+

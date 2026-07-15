@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 Option Explicit On
 
 Imports System
@@ -1252,3 +1252,4 @@ Public Class FormLogBookMenu
         Return sb.ToString().TrimEnd()
     End Function
 End Class
+

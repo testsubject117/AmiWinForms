@@ -200,3 +200,4 @@ Public Class FormTypewriterMode
         ' No confirmation needed - just exit like DOS
     End Sub
 End Class
+

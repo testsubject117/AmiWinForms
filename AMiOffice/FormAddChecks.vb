@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 Option Explicit On
 
 Imports System
@@ -336,10 +336,9 @@ Public Class FormAddChecks
             End If
 
             If e.KeyCode = Keys.P Then
-                MessageBox.Show("Print list of invoices is not implemented yet.",
+                DosMessageBox.Show(Me, "Print list of invoices is not implemented yet.",
                                 "Add A Check",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Information)
+                                MessageBoxButtons.OK)
                 e.Handled = True
                 e.SuppressKeyPress = True
                 Return
@@ -371,20 +370,18 @@ Public Class FormAddChecks
             End If
 
             If e.KeyCode = Keys.D1 OrElse e.KeyCode = Keys.NumPad1 Then
-                MessageBox.Show("Discount flow is not implemented yet.",
+                DosMessageBox.Show(Me, "Discount flow is not implemented yet.",
                                 "Add A Check",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Information)
+                                MessageBoxButtons.OK)
                 e.Handled = True
                 e.SuppressKeyPress = True
                 Return
             End If
 
             If e.KeyCode = Keys.D2 OrElse e.KeyCode = Keys.NumPad2 Then
-                MessageBox.Show("Debit flow is not implemented yet.",
+                DosMessageBox.Show(Me, "Debit flow is not implemented yet.",
                                 "Add A Check",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Information)
+                                MessageBoxButtons.OK)
                 e.Handled = True
                 e.SuppressKeyPress = True
                 Return
