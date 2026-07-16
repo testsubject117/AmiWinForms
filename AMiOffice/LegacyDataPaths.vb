@@ -8,7 +8,10 @@ Public NotInheritable Class LegacyDataPaths
     Private Sub New()
     End Sub
 
-    Public Shared ReadOnly Property BaseDataDir As String = "\\invoice\MainMenu\Data"
+    ' NOTE: \\invoice resolves via hosts file on production machines.
+    ' On dev machine with Tailscale active, use direct IP temporarily.
+    ' TODO: Restore to \\invoice\MainMenu\Data before production deployment.
+    Public Shared ReadOnly Property BaseDataDir As String = "\\192.168.1.124\MainMenu\Data"
     Public Shared ReadOnly Property WordDocDir As String = Path.Combine(BaseDataDir, "Word")
 
     ' Ed Dean's Personal Backup destination (Option Y)
@@ -16,6 +19,8 @@ Public NotInheritable Class LegacyDataPaths
     ' Production path: \\192.168.1.176\EdDeanBU
     Public Shared ReadOnly Property PersonalBackupPath As String = "\\192.168.1.176\EdDeanBU"
 
+    Public Shared ReadOnly Property JournalCur As String =
+        Path.Combine(BaseDataDir, "JOURNAL.CUR")
     Public Shared ReadOnly Property LedgerCur As String =
         Path.Combine(BaseDataDir, "LEDGER.CUR")
     Public Shared ReadOnly Property CheckInv As String = Path.Combine(BaseDataDir, "CHECK.INV")

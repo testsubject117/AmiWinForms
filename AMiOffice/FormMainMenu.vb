@@ -331,7 +331,9 @@ Partial Public Class FormMainMenu
                 End Using
 
             Case "D"
-                NotYet("View Sales Journal (SALES)")
+                Using f As New FormSalesJournalMenu()
+                    f.ShowDialog(Me)
+                End Using
 
             Case "E"
                 StartLogBookYearPrompt()
