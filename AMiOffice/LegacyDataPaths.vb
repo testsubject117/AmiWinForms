@@ -27,4 +27,5 @@ Public NotInheritable Class LegacyDataPaths
     Public Shared ReadOnly Property InvoiceChk As String = Path.Combine(BaseDataDir, "INVOICE.CHK")
     Public Shared ReadOnly Property OtherChk As String = Path.Combine(BaseDataDir, "OTHER.CHK")
     Public Shared ReadOnly Property EmpNameDat As String = Path.Combine(BaseDataDir, "EMPNAME.DAT")
+    Public Shared ReadOnly Property ExpenseDat As String = Path.Combine(BaseDataDir, "EXPENSE.DAT")
 End Class

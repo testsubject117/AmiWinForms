@@ -17,6 +17,10 @@ Partial Public Class FormMainMenu
     Private _logBookYearBuffer As String = ""
     Private _logBookDefaultYear As Integer = 0
 
+    ' --- DOS-style bottom prompt state (for L password flow) ---
+    Private _isPasswordPromptActive As Boolean = False
+    Private _passwordBuffer As String = ""
+
     ' Remember AcceptButton so we can restore it after prompt mode
     Private _savedAcceptButton As IButtonControl = Nothing
 
@@ -88,6 +92,18 @@ Partial Public Class FormMainMenu
 
             If keyData = Keys.Enter Then
                 AcceptLogBookYearPrompt()
+                Return True
+            End If
+        End If
+
+        If _isPasswordPromptActive Then
+            If keyData = Keys.Escape Then
+                StopPasswordPrompt()
+                Return True
+            End If
+
+            If keyData = Keys.Enter Then
+                AcceptPasswordPrompt()
                 Return True
             End If
         End If
@@ -272,6 +288,25 @@ Partial Public Class FormMainMenu
             Return
         End If
 
+        ' --- L password prompt: accept printable chars and backspace ---
+        If _isPasswordPromptActive Then
+            e.Handled = True
+
+            If ch = ChrW(Keys.Back) Then
+                If _passwordBuffer.Length > 0 Then
+                    _passwordBuffer = _passwordBuffer.Substring(0, _passwordBuffer.Length - 1)
+                    RefreshPasswordPromptLine()
+                End If
+                Return
+            End If
+
+            If Not Char.IsControl(ch) Then
+                _passwordBuffer &= ch
+                RefreshPasswordPromptLine()
+            End If
+            Return
+        End If
+
         ' Normal main menu behavior:
         Dim s As String = ch.ToString()
         If s = vbCr OrElse s = vbLf Then Return
@@ -318,9 +353,16 @@ Partial Public Class FormMainMenu
             Return
         End If
 
+        ' If we're in password prompt mode, ignore all menu keys.
+        If _isPasswordPromptActive Then
+            Return
+        End If
+
         Select Case up
             Case "A"
-                NotYet("Shop Card Generator")
+                Using frm As New FormShopCardMenu()
+                    frm.ShowDialog(Me)
+                End Using
 
             Case "B"
                 NotYet("Invoice Generator")
@@ -375,7 +417,9 @@ Partial Public Class FormMainMenu
                 NotYet("Cash Disbursements (BILL)")
 
             Case "L"
-                NotYet("Business Expenses Account (password)")
+                ' DOS MAINMENU.BAS gates this with: IF Q$="EDLAR" THEN CHAIN "PERSONAL.BAS"
+                ' Show DOS-style bottom-bar password prompt instead of a popup
+                StartPasswordPrompt()
 
             Case "M"
                 NotYet("Quotation Form Generator (QUOTE)")
@@ -585,6 +629,46 @@ Partial Public Class FormMainMenu
                             MessageBoxButtons.OK,
                             MessageBoxIcon.Error)
         End Try
+    End Sub
+
+    ' -------------------------------
+    ' Business Expenses password prompt (Option L)
+    ' -------------------------------
+    Private Sub StartPasswordPrompt()
+        _isPasswordPromptActive = True
+        _passwordBuffer = ""
+
+        _savedAcceptButton = Me.AcceptButton
+        Me.AcceptButton = Nothing
+        Me.ActiveControl = Nothing
+
+        _promptBorderColor = Color.Yellow
+        RefreshPasswordPromptLine()
+    End Sub
+
+    Private Sub RefreshPasswordPromptLine()
+        Dim masked As String = New String("*"c, _passwordBuffer.Length)
+        ShowBottomPrompt("Enter Password: " & masked)
+    End Sub
+
+    Private Sub StopPasswordPrompt()
+        _isPasswordPromptActive = False
+        _passwordBuffer = ""
+
+        Me.AcceptButton = _savedAcceptButton
+        _savedAcceptButton = Nothing
+
+        HideBottomPrompt()
+    End Sub
+
+    Private Sub AcceptPasswordPrompt()
+        Dim entered As String = _passwordBuffer.ToUpperInvariant()
+        StopPasswordPrompt()
+
+        If String.Equals(entered, "EDLAR", StringComparison.Ordinal) Then
+            Dim fBE As New FormBusinessExpenses()
+            fBE.ShowDialog(Me)
+        End If
     End Sub
 
     Private Sub NotYet(feature As String)

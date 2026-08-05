@@ -12,6 +12,8 @@ Public Class DosMenuFormBase
     Protected ReadOnly lblMainMenu As New Label()
     Protected ReadOnly lblDateTime As New Label()
     Protected ReadOnly tmrClock As New Timer()
+    Private _lblInfoDate As Label = Nothing
+    Private _lblInfoTime As Label = Nothing
 
     Protected ReadOnly flpLeft As New FlowLayoutPanel()
     Protected ReadOnly flpRight As New FlowLayoutPanel()
@@ -119,45 +121,104 @@ Public Class DosMenuFormBase
             End Sub
 
         ' Main content (header + body) fills above bottom bar
+        ' Header is a SINGLE panel so lines are never clipped by row boundaries.
+        ' Layout (px from top of header panel):
+        '   0-1   line 1 of top double-line
+        '   4-5   line 2 of top double-line
+        '   8-62  SHOPCARD GENERATOR title  (54px)
+        '   64-65 line 1 of mid double-line
+        '   68-69 line 2 of mid double-line
+        '   72-94 date / customer / time bar (22px)
+        '   96-97 line 1 of bottom double-line
+        '  100-101 line 2 of bottom double-line
+        ' Total header height = 102px
+        Const HDR As Integer = 112
+
         Dim root As New TableLayoutPanel() With {
             .Dock = DockStyle.Fill,
             .ColumnCount = 1,
             .RowCount = 2,
-            .BackColor = _bgDarkGray,
+            .BackColor = _bgBlack,
             .Margin = New Padding(0)
         }
-        root.RowStyles.Add(New RowStyle(SizeType.Absolute, 60.0F)) ' header row - extended to 60px for more black
-        root.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F)) ' body
+        root.RowStyles.Add(New RowStyle(SizeType.Absolute, HDR))
+        root.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
 
-        ' Header row: title left, clock right (same line)
-        Dim header As New TableLayoutPanel() With {
-            .Dock = DockStyle.Fill,
-            .BackColor = _bgBlack,
-            .ColumnCount = 2,
-            .RowCount = 1,
-            .Margin = New Padding(0),
-            .Padding = New Padding(8, 0, 8, 0)
-        }
-        header.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
-        header.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
+        ' ── Combined header panel ────────────────────────────────────────────────
+        Dim pnlHeader As New Panel() With {.Dock = DockStyle.Fill, .BackColor = _bgBlack}
 
-        lblMainMenu.AutoSize = True
-        lblMainMenu.Margin = New Padding(0, -4, 0, -4)  ' Negative margin to reduce height
+        Dim MkLine = Function(top As Integer) As Panel
+                         Return New Panel() With {
+                             .BackColor = Color.Yellow,
+                             .Height = 1, .Left = 0, .Top = top,
+                             .Anchor = AnchorStyles.Left Or AnchorStyles.Right Or AnchorStyles.Top
+                         }
+                     End Function
+
+        Dim ln1 = MkLine(0)   ' top double-line
+        Dim ln2 = MkLine(4)
+        Dim ln3 = MkLine(64)  ' mid double-line (below title)
+        Dim ln4 = MkLine(68)
+        Dim ln5 = MkLine(96)  ' bottom double-line (below info bar)
+        Dim ln6 = MkLine(100)
+
+        AddHandler pnlHeader.Resize, Sub(s As Object, ev As EventArgs)
+            Dim w As Integer = pnlHeader.Width
+            For Each ln As Panel In {ln1, ln2, ln3, ln4, ln5, ln6}
+                ln.Width = w
+            Next
+            lblMainMenu.Width = w - 16
+        End Sub
+
+        ' Title label — sits between top double-line and mid double-line
+        lblMainMenu.AutoSize = False
+        lblMainMenu.Dock = DockStyle.None
+        lblMainMenu.Left = 8
+        lblMainMenu.Top = 8
+        lblMainMenu.Height = 54
+        lblMainMenu.Width = 800
         UiTheme.ApplyDosTitleStyle(lblMainMenu)
+        lblMainMenu.Font = New Font("Castellar", 32.0F, FontStyle.Bold, GraphicsUnit.Point)
 
+        ' Info bar labels — sit between mid double-line and bottom double-line
+        Dim lblDate As New Label() With {
+            .AutoSize = False, .Top = 71, .Left = 6, .Height = 22,
+            .TextAlign = ContentAlignment.MiddleLeft,
+            .Font = New Font("Consolas", 10.0F, FontStyle.Bold, GraphicsUnit.Point),
+            .ForeColor = Color.Yellow, .BackColor = _bgBlack
+        }
         lblDateTime.AutoSize = False
-        lblDateTime.Dock = DockStyle.Fill
-        lblDateTime.TextAlign = ContentAlignment.MiddleRight
-        lblDateTime.Font = New Font("Segoe UI", 10.0F, FontStyle.Bold, GraphicsUnit.Point)
+        lblDateTime.Dock = DockStyle.None
+        lblDateTime.Top = 71
+        lblDateTime.Height = 22
+        lblDateTime.TextAlign = ContentAlignment.MiddleCenter
+        lblDateTime.Font = New Font("Consolas", 10.0F, FontStyle.Bold, GraphicsUnit.Point)
         lblDateTime.ForeColor = Color.Yellow
         lblDateTime.BackColor = _bgBlack
-        lblDateTime.Margin = New Padding(0, -4, 0, -4)  ' Negative margin to reduce height
-        lblDateTime.Padding = New Padding(0)
 
-        header.Controls.Add(lblMainMenu, 0, 0)
-        header.Controls.Add(lblDateTime, 1, 0)
+        Dim lblTime As New Label() With {
+            .AutoSize = False, .Top = 71, .Height = 22,
+            .TextAlign = ContentAlignment.MiddleRight,
+            .Font = New Font("Consolas", 10.0F, FontStyle.Bold, GraphicsUnit.Point),
+            .ForeColor = Color.Yellow, .BackColor = _bgBlack
+        }
 
-        ' Body: dark gray background so black buttons contrast
+        AddHandler pnlHeader.Resize, Sub(s2 As Object, ev2 As EventArgs)
+            Dim w As Integer = pnlHeader.Width
+            lblDate.Width = w \ 4
+            lblDateTime.Width = w \ 2
+            lblDateTime.Left = w \ 4
+            lblTime.Width = w \ 4
+            lblTime.Left = w * 3 \ 4
+        End Sub
+
+        _lblInfoDate = lblDate
+        _lblInfoTime = lblTime
+
+        pnlHeader.Controls.AddRange({ln1, ln2, lblMainMenu, ln3, ln4,
+                                     lblDate, lblDateTime, lblTime, ln5, ln6})
+
+        ' ── Body (buttons) ──────────────────────────────────────────────────────
         Dim body As New TableLayoutPanel() With {
             .Dock = DockStyle.Fill,
             .ColumnCount = 2,
@@ -173,7 +234,7 @@ Public Class DosMenuFormBase
         body.Controls.Add(flpLeft, 0, 0)
         body.Controls.Add(flpRight, 1, 0)
 
-        root.Controls.Add(header, 0, 0)
+        root.Controls.Add(pnlHeader, 0, 0)
         root.Controls.Add(body, 0, 1)
 
         host.Controls.Clear()
@@ -201,6 +262,9 @@ Public Class DosMenuFormBase
         lblMainMenu.Text = title
         Me.Text = title
     End Sub
+
+    ' Customer name injected into the header clock line (DOS: "date    Customers name: X    time")
+    Protected Property HeaderCustomerName As String = ""
 
     Protected Sub ClearMenu()
         flpLeft.Controls.Clear()
@@ -302,16 +366,17 @@ Public Class DosMenuFormBase
 
     Protected Sub UpdateHeaderClock()
         Dim now As DateTime = DateTime.Now
+        Dim datePart As String = now.ToString("MM-dd-yyyy")
+        Dim timePart As String = now.ToString("HH:mm")
 
-        Dim verPrefix As String = ""
-        If ShowVersionInHeader AndAlso Not String.IsNullOrWhiteSpace(_displayVersion) Then
-            verPrefix = "   " & _displayVersion & "          "
+        If _lblInfoDate IsNot Nothing Then _lblInfoDate.Text = datePart
+        If _lblInfoTime IsNot Nothing Then _lblInfoTime.Text = timePart
+
+        If Not String.IsNullOrWhiteSpace(HeaderCustomerName) Then
+            lblDateTime.Text = "Customers name: " & HeaderCustomerName
+        Else
+            lblDateTime.Text = ""
         End If
-
-        lblDateTime.Text = verPrefix &
-                           now.ToString("dddd") & "  " &
-                           now.ToString("MM-dd-yyyy") & "          " &
-                           now.ToString("hh:mm:ss tt")
     End Sub
 
     ''' <summary>

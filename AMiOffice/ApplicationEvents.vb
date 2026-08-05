@@ -8,6 +8,13 @@ Namespace My
     ' StartupNextInstance: Raised when launching a single-instance application and the application is already active.
     ' NetworkAvailabilityChanged: Raised when the network connection is connected or disconnected.
 
+    Partial Friend Class MyApplication
+        Private Sub MyApplication_Startup(sender As Object, e As StartupEventArgs) Handles Me.Startup
+            ' Load carry-forward session values from disk (CUSTOMER.NAM etc.)
+            ShopCardSession.LoadFromDisk()
+        End Sub
+    End Class
+
     ' **NEW** ApplyApplicationDefaults: Raised when the application queries default values to be set for the application.
 
     ' Example:
