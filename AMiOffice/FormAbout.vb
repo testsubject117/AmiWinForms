@@ -46,18 +46,15 @@ Partial Public Class FormAbout
         picDeveloper.Visible = (picDeveloper.Image IsNot Nothing)
         picDeveloper.BackColor = UiTheme.DosBackColor
 
-        Dim exePath As String = Application.ExecutablePath
-        Dim fvi As FileVersionInfo = FileVersionInfo.GetVersionInfo(exePath)
-
         Dim sb As New StringBuilder()
 
         ' Move text down ~1 lines
         sb.AppendLine()
 
         sb.AppendLine("AMiOffice")
-        sb.AppendLine($"Version: {My.Application.Info.Version}")
-        sb.AppendLine($"File Version: {Safe(fvi.FileVersion)}")
-        sb.AppendLine($"Build: {BuildInfo.DisplayVersion}")
+        sb.AppendLine($"Version: {BuildInfo.ProductVersion}")
+        sb.AppendLine($"Build: {BuildInfo.BuildNumber}")
+        sb.AppendLine($"{BuildInfo.DisplayVersion}")
         sb.AppendLine()
 
         sb.AppendLine("Author/Developer: Kirk Saffell")

@@ -312,7 +312,7 @@ Public Class DosMenuFormBase
         End If
     End Sub
 
-    Private Sub ResizeButtonsToPanel(panel As FlowLayoutPanel)
+    Protected Sub ResizeButtonsToPanel(panel As FlowLayoutPanel)
         If panel Is Nothing Then Return
 
         If StretchButtonsToPanelWidth Then
@@ -427,6 +427,96 @@ Public Class DosMenuFormBase
         DosMessageBox.Show(Me, "Not implemented yet: " & feature, "Port status", MessageBoxButtons.OK)
     End Sub
 
+    ' ── Inline bottom prompt (DOS-style prompt below the menu) ───────────
+    Private _hostPanel As Panel = Nothing
+    Private _pnlInlinePrompt As Panel = Nothing
+    Private _lblInlinePrompt As Label = Nothing
+    Private _txtInlineInput As TextBox = Nothing
+    Private _inlinePromptCallback As Action(Of String) = Nothing
+    Private Const BottomBarNormalHeight As Integer = 32
+    Private Const BottomBarExpandedHeight As Integer = 60
+
+    Protected Sub ShowInlinePrompt(promptText As String, callback As Action(Of String))
+        ShowInlinePromptCore(promptText, callback, False)
+    End Sub
+
+    Protected Sub ShowInlinePasswordPrompt(promptText As String, callback As Action(Of String))
+        ShowInlinePromptCore(promptText, callback, True)
+    End Sub
+
+    Private Sub ShowInlinePromptCore(promptText As String, callback As Action(Of String), isPassword As Boolean)
+        _inlinePromptCallback = callback
+
+        If _pnlInlinePrompt Is Nothing Then
+            _pnlInlinePrompt = New Panel() With {
+                .Height = 28,
+                .Left = 0,
+                .BackColor = Color.Black,
+                .Anchor = AnchorStyles.Left Or AnchorStyles.Right Or AnchorStyles.Bottom
+            }
+            _lblInlinePrompt = New Label() With {
+                .AutoSize = True,
+                .ForeColor = Color.White,
+                .BackColor = Color.Black,
+                .Font = New Font("Courier New", 11.0F, FontStyle.Regular, GraphicsUnit.Point),
+                .Location = New Point(4, 4)
+            }
+            _txtInlineInput = New TextBox() With {
+                .BackColor = Color.Black,
+                .ForeColor = Color.White,
+                .Font = New Font("Courier New", 11.0F, FontStyle.Regular, GraphicsUnit.Point),
+                .BorderStyle = BorderStyle.None,
+                .MaxLength = 40
+            }
+            AddHandler _txtInlineInput.KeyDown, AddressOf InlineInputKeyDown
+            _pnlInlinePrompt.Controls.Add(_lblInlinePrompt)
+            _pnlInlinePrompt.Controls.Add(_txtInlineInput)
+            ' Add to pnlBottom so it stays anchored correctly
+            pnlBottom.Controls.Add(_pnlInlinePrompt)
+        End If
+
+        _lblInlinePrompt.Text = promptText
+        _lblInlinePrompt.Location = New Point(4, 5)
+        _txtInlineInput.Location = New Point(_lblInlinePrompt.PreferredWidth + 8, 5)
+        _txtInlineInput.Width = pnlBottom.ClientSize.Width - _txtInlineInput.Left - 170  ' leave room for ESC btn
+        _txtInlineInput.Text = ""
+        _txtInlineInput.PasswordChar = If(isPassword, "*"c, ChrW(0))
+        ' Expand pnlBottom to show the prompt row above the ESC button
+        _pnlInlinePrompt.Top = 0
+        _pnlInlinePrompt.Width = pnlBottom.ClientSize.Width
+        pnlBottom.Height = BottomBarExpandedHeight
+        _pnlInlinePrompt.Visible = True
+        _txtInlineInput.Focus()
+    End Sub
+
+    Private Sub PositionInlinePrompt(sender As Object, e As EventArgs)
+        ' No-op: layout is handled by pnlBottom anchor/dock
+    End Sub
+
+    Protected Sub HideInlinePrompt()
+        If _pnlInlinePrompt IsNot Nothing Then
+            _pnlInlinePrompt.Visible = False
+            ' Clear ActiveControl so IsTextInputActive() doesn't keep blocking hotkeys
+            If Me.ActiveControl Is _txtInlineInput Then
+                Me.ActiveControl = Nothing
+            End If
+        End If
+        pnlBottom.Height = BottomBarNormalHeight
+        Me.Focus()
+    End Sub
+
+    Private Sub InlineInputKeyDown(sender As Object, e As KeyEventArgs)
+        If e.KeyCode = Keys.Enter Then
+            e.SuppressKeyPress = True
+            Dim val = If(_txtInlineInput IsNot Nothing, _txtInlineInput.Text.Trim(), "")
+            HideInlinePrompt()
+            _inlinePromptCallback?.Invoke(val)
+        ElseIf e.KeyCode = Keys.Escape Then
+            e.SuppressKeyPress = True
+            HideInlinePrompt()
+            _inlinePromptCallback?.Invoke("")
+        End If
+    End Sub
 
 End Class
 

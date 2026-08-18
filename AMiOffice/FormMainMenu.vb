@@ -559,9 +559,53 @@ Partial Public Class FormMainMenu
                     f.ShowDialog(Me)
                 End Using
 
+            Case "$"
+                ' DOS MAINMENU.ASC line 842: IF Q$="$" THEN CHAIN "S"
+                ' Chains directly to S.BAS (ShopCard) at customer name prompt,
+                ' bypassing the ShopCard menu entirely.
+                LaunchShopCardDirect()
+
             Case Else
                 ' ignore unknown keys
         End Select
+    End Sub
+
+    ''' <summary>
+    ''' DOS MAINMENU.ASC line 842: IF Q$="$" THEN CHAIN "S"
+    ''' Bypasses the ShopCard menu and goes straight to customer name entry,
+    ''' then runs the full create-card flow from there.
+    ''' </summary>
+    Private Sub LaunchShopCardDirect()
+        ' Ask customer name (same as ShopCard menu (1) flow, just entered from main menu)
+        Dim name As String = FormShopCardHeader.AskCustomerName(Me)
+        If name Is Nothing OrElse name.Trim() = "" Then Return
+        name = name.Trim().ToUpper()
+        ShopCardSession.SaveCustomerName(name)
+
+        ' Open a temporary ShopCardMenu in the background just to run the create flow
+        ' Actually: replicate the exact LaunchCreateShopCard logic inline here
+        Using frm As New FormShopCardHeader(name)
+            If frm.ShowDialog(Me) = DialogResult.OK AndAlso frm.Accepted Then
+                Dim record = frm.Result
+                Using magPene As New FormShopCardMagPene(record)
+                    magPene.ShowDialog(Me)
+                End Using
+                Using hub As New FormShopCardSectionHub(record)
+                    hub.ShowDialog(Me)
+                End Using
+                ' Write-to-disk + print instruction screens (DOS lines 4350-4700)
+                Using save As New FormShopCardSave(record, name)
+                    Dim result = save.ShowDialog(Me)
+                    If result = DialogResult.Cancel Then
+                        ' Q -> back to customer name screen (DOS line 4680 -> GOTO 100)
+                        Dim newName As String = FormShopCardHeader.AskCustomerName(Me)
+                        If newName IsNot Nothing AndAlso newName.Trim() <> "" Then
+                            ShopCardSession.SaveCustomerName(newName.Trim().ToUpper())
+                        End If
+                    End If
+                End Using
+            End If
+        End Using
     End Sub
 
     ' -------------------------------

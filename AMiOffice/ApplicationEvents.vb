@@ -12,6 +12,10 @@ Namespace My
         Private Sub MyApplication_Startup(sender As Object, e As StartupEventArgs) Handles Me.Startup
             ' Load carry-forward session values from disk (CUSTOMER.NAM etc.)
             ShopCardSession.LoadFromDisk()
+            ' Ensure the card counter is never behind the highest card already on disk.
+            ' This silently corrects for the DOS-era wrap-at-1500 problem so new cards
+            ' always append after all existing historical data with no risk of overwrite.
+            ShopCardSession.SeedCounterFromDisk()
         End Sub
     End Class
 

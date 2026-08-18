@@ -70,32 +70,26 @@ Public Class FormShopCardSection
 
         Select Case _sectionNum
 
-            Case 1  ' Etch / Clean / Glassbead / Strip
+            Case 1  ' Etch / Clean / Glassbead / Strip (DOS DATA line 1820: 10 fields)
                 d.Add(F("A", "Etch for Weld:", 1))
-                d.Add(F("B", "Etch Spec:", 2, FieldKind.TextEntry))
-                d.Add(F("C", "Clean:", 3))
-                d.Add(F("D", "Clean Spec:", 4, FieldKind.TextEntry))
-                d.Add(F("E", "Glassbead:", 5))
-                d.Add(F("F", "Glassbead Spec:", 6, FieldKind.TextEntry))
-                d.Add(F("G", "Strip:", 7))
-                d.Add(F("H", "Strip Spec:", 8, FieldKind.TextEntry))
-                d.Add(F("I", "Alodine:", 9))
-                d.Add(F("J", "Alodine Spec:", 10, FieldKind.TextEntry))
-                d.Add(F("K", "Paint:", 11))
-                d.Add(F("L", "Paint Spec:", 12, FieldKind.TextEntry))
-                d.Add(F("M", "Primer:", 13))
-                d.Add(F("N", "Primer Spec:", 14, FieldKind.TextEntry))
-                d.Add(F("O", "Topcoat:", 15))
-                d.Add(F("P", "Topcoat Spec:", 16, FieldKind.TextEntry))
+                d.Add(F("B", "Alkaline:", 2))
+                d.Add(F("C", "Descale:", 3))
+                d.Add(F("D", "Glass Bead:", 4))
+                d.Add(F("E", "Powder Blast:", 5))
+                d.Add(F("F", "Aluminum Oxide:", 6))
+                d.Add(F("G", "Strip Copper:", 7))
+                d.Add(F("H", "Degrease:", 8))
+                d.Add(F("I", "Cetyl:", 9))
+                d.Add(F("J", "Other:", 10, FieldKind.TextEntry))
 
-            Case 2  ' Electro Polish / Passivate / Salt Spray / High Humidity / Copper Sulfate
+            Case 2  ' Electro Polish / Passivate / Salt Spray / High Humidity / Copper Sulfate (DOS DATA line 1830)
                 d.Add(F("A", "Electro Polish:", 1))
-                d.Add(F("B", "Passivate:", 2))
-                d.Add(F("C", "Passivate Type:", 3, FieldKind.TextEntry))
-                d.Add(F("D", "Passivate Spec:", 4, FieldKind.TextEntry))
-                d.Add(F("E", "Salt Spray:", 5))
-                d.Add(F("F", "Salt Spray Hrs:", 6, FieldKind.TextEntry))
-                d.Add(F("G", "Specs:", 7, FieldKind.TextEntry))
+                d.Add(F("B", "Time:", 2, FieldKind.TextEntry))
+                d.Add(F("C", "Amps:", 3, FieldKind.TextEntry))
+                d.Add(F("D", "Passivate:", 4))
+                d.Add(F("E", "AMS QQP35:", 5))
+                d.Add(F("F", "MIL-S-5002DA1:", 6))
+                d.Add(F("G", "Other:", 7, FieldKind.TextEntry))
                 d.Add(F("H", "Type II:", 8))
                 d.Add(F("I", "Type VI:", 9))
                 d.Add(F("J", "Type VII:", 10))
@@ -107,7 +101,6 @@ Public Class FormShopCardSection
                 d.Add(F("P", "Visual Insp. After:", 16))
                 d.Add(F("Q", "Copper Sulfate pcs:", 17, FieldKind.TextEntry))
                 d.Add(Spacer("R"))
-                ' High Humidity — two linked sub-values stored as one string "pcs   Hours: val"
                 Dim hhShortcuts As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
                     {"M", "6 Min."}
                 }
@@ -116,45 +109,17 @@ Public Class FormShopCardSection
                 hh.PromptLabel = "High Humidity pcs"
                 d.Add(hh)
 
-            Case 3  ' Chem Film / Anodize
+            Case 3  ' Chem Film / Anodize (DOS DATA line 1850: 6 fields)
                 d.Add(F("A", "Chem Film:", 1))
-                d.Add(F("B", "Chem Film Spec:", 2, FieldKind.TextEntry))
-                d.Add(F("C", "Anodize:", 3))
-                ' Anodize Type — shortcuts for color picker (SS-040)
-                Dim anShortcuts As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
-                    {"C", "CLEAR"},
-                    {"B", "BLACK"},
-                    {"R", "RED"},
-                    {"G", "GOLD"},
-                    {"Y", "YELLOW"}
-                }
-                Dim at = F("D", "Anodize Type:", 4, FieldKind.TextEntry)
-                at.Shortcuts = anShortcuts
-                at.PromptLabel = "Anodize Type"
-                d.Add(at)
-                ' Spec shortcuts (SS-042)
-                Dim specShortcuts As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
-                    {"1", "MIL-A-8625 TYPE I"},
-                    {"2", "MIL-A-8625 TYPE II"},
-                    {"3", "MIL-A-8625 TYPE III"}
-                }
-                Dim sp = F("E", "Spec:", 5, FieldKind.TextEntry)
-                sp.Shortcuts = specShortcuts
-                sp.PromptLabel = "Spec"
-                d.Add(sp)
-                d.Add(F("F", "Seal:", 6))
-                d.Add(F("G", "Seal Spec:", 7, FieldKind.TextEntry))
-                d.Add(F("H", "Touch Up:", 8))
-                d.Add(F("I", "Type I:", 9))
-                d.Add(F("J", "Type II:", 10))
-                d.Add(F("K", "Type III:", 11))
-                d.Add(F("L", "Class 1:", 12))
-                d.Add(F("M", "Class 2:", 13))
-                d.Add(F("N", "Thickness:", 14, FieldKind.TextEntry))
+                d.Add(F("B", "Clear:", 2))
+                d.Add(F("C", "Gold:", 3))
+                d.Add(F("D", "Other:", 4, FieldKind.TextEntry))
+                d.Add(F("E", "Spec.:", 5, FieldKind.TextEntry))
+                d.Add(F("F", "Anodize:", 6, FieldKind.TextEntry))
 
-            Case 4  ' Magnetic Insp.
+            Case 4  ' Magnetic Insp. (DOS DATA line 1860: 9 fields)
                 d.Add(F("A", "Magnetic Insp.:", 1))
-                d.Add(F("B", "METHOD OF INSPECTION: SEE TECHNIQUE SHEET:", 2))
+                d.Add(F("B", "ASTM-E-1444-01:", 2))
                 d.Add(F("C", "Other:", 3, FieldKind.TextEntry))
                 d.Add(F("D", "Head PSI:", 4, FieldKind.TextEntry))
                 d.Add(F("E", "Centeral Conductor Amps:", 5, FieldKind.TextEntry))
@@ -163,25 +128,25 @@ Public Class FormShopCardSection
                 d.Add(F("H", "Coil Shot Amps:", 8, FieldKind.TextEntry))
                 d.Add(Spacer("I"))
 
-            Case 5  ' Penetrant Insp.
+            Case 5  ' Penetrant Insp. (DOS DATA lines 1870-1871: 18 fields)
                 d.Add(F("A", "Penetrant Insp.:", 1))
-                d.Add(F("B", "METHOD OF INSPECTION: SEE TECHNIQUE SHEET:", 2))
-                d.Add(F("C", "Spec:", 3, FieldKind.TextEntry))
-                d.Add(F("D", "Ardrox 9812:", 4))
-                d.Add(F("E", "Ardrox 970P25E:", 5))
-                d.Add(F("F", "Ardrox 9B13:", 6))
-                d.Add(F("G", "Ardrox 9B5-P14:", 7))
+                d.Add(F("B", "MIL-STD-6866N1:", 2))
+                d.Add(F("C", "Other:", 3, FieldKind.TextEntry))
+                d.Add(F("D", "etch:", 4))
+                d.Add(F("E", "Ardrox P135E:", 5))
+                d.Add(F("F", "Ardrox 985-P13:", 6))
+                d.Add(F("G", "Ardrox 985-P14:", 7))
                 d.Add(F("H", "Batch:", 8, FieldKind.TextEntry))
-                d.Add(F("I", "Emulsifier:", 9, FieldKind.TextEntry))
+                d.Add(F("I", "Developer Ardrox:", 9))
                 d.Add(F("J", "Batch:", 10, FieldKind.TextEntry))
-                d.Add(F("K", "Developer:", 11, FieldKind.TextEntry))
-                d.Add(F("L", "Time Developer Applied:", 12, FieldKind.TextEntry))
-                d.Add(Spacer("M"))
+                d.Add(F("K", "Etch Rate:", 11, FieldKind.TextEntry))
+                d.Add(F("L", "Etch Results:", 12, FieldKind.TextEntry))
+                d.Add(F("M", "Etch Spec.:", 13, FieldKind.TextEntry))
                 d.Add(F("N", "Method:", 14, FieldKind.TextEntry))
                 d.Add(F("O", "Level:", 15, FieldKind.TextEntry))
                 d.Add(F("P", "Tank No.:", 16, FieldKind.TextEntry))
                 d.Add(F("Q", "Dwell Time:", 17, FieldKind.TextEntry))
-                d.Add(F("R", "Drying Temp. (150f Max):", 18, FieldKind.TextEntry))
+                d.Add(F("R", "Min. Drying Temp. (160f Max):", 18, FieldKind.TextEntry))
 
             Case 6  ' Dye / Stamp
                 Dim dyeShortcuts As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -262,13 +227,15 @@ Public Class FormShopCardSection
 
         _rows = BuildFieldDefs()
 
-        Me.Text = ""
-        Me.FormBorderStyle = FormBorderStyle.None
+        Me.Text = SectionTitle()
+        Me.FormBorderStyle = FormBorderStyle.FixedSingle
+        Me.MaximizeBox = False
+        Me.MinimizeBox = False
         Me.BackColor = Color.Black
-        Me.ForeColor = Color.Yellow
+        Me.ForeColor = Color.White
         Me.KeyPreview = True
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.Width = 900
+        Me.Width = 1100
         Me.Height = 700
 
         BuildLayout()
@@ -296,56 +263,6 @@ Public Class FormShopCardSection
     End Function
 
     Private Sub BuildLayout()
-        ' ── header panel (title + double lines + info bar) ─────────────
-        pnlHeader.Dock = DockStyle.Top
-        pnlHeader.Height = 110
-        pnlHeader.BackColor = Color.Black
-        Me.Controls.Add(pnlHeader)
-
-        ' top double line
-        Dim line1 As New Label() With {.AutoSize = False, .Height = 2,
-            .BackColor = Color.Yellow, .Dock = DockStyle.Top}
-        Dim line2 As New Label() With {.AutoSize = False, .Height = 2,
-            .BackColor = Color.Yellow, .Top = 4, .Left = 0, .Width = Me.Width}
-        pnlHeader.Controls.Add(line1)
-        pnlHeader.Controls.Add(line2)
-
-        lblTitle.AutoSize = False
-        lblTitle.TextAlign = ContentAlignment.MiddleCenter
-        lblTitle.ForeColor = Color.Yellow
-        lblTitle.BackColor = Color.Black
-        lblTitle.Font = New Font("Castellar", 18, FontStyle.Bold)
-        lblTitle.Text = SectionTitle()
-        lblTitle.Height = 52
-        lblTitle.Dock = DockStyle.Top
-        pnlHeader.Controls.Add(lblTitle)
-
-        ' mid double line
-        Dim line3 As New Label() With {.AutoSize = False, .Height = 2,
-            .BackColor = Color.Yellow, .Dock = DockStyle.Top}
-        Dim line4 As New Label() With {.AutoSize = False, .Height = 2,
-            .BackColor = Color.Yellow, .Dock = DockStyle.Top}
-        pnlHeader.Controls.Add(line3)
-        pnlHeader.Controls.Add(line4)
-
-        ' info bar
-        lblInfoBar.AutoSize = False
-        lblInfoBar.Dock = DockStyle.Top
-        lblInfoBar.Height = 22
-        lblInfoBar.Font = New Font("Courier New", 10, FontStyle.Regular)
-        lblInfoBar.ForeColor = Color.Yellow
-        lblInfoBar.BackColor = Color.Black
-        lblInfoBar.TextAlign = ContentAlignment.MiddleLeft
-        pnlHeader.Controls.Add(lblInfoBar)
-
-        ' bottom double line
-        Dim line5 As New Label() With {.AutoSize = False, .Height = 2,
-            .BackColor = Color.Yellow, .Dock = DockStyle.Top}
-        Dim line6 As New Label() With {.AutoSize = False, .Height = 2,
-            .BackColor = Color.Yellow, .Dock = DockStyle.Top}
-        pnlHeader.Controls.Add(line5)
-        pnlHeader.Controls.Add(line6)
-
         ' ── prompt panel (bottom, for text-entry sub-prompts) ───────────
         pnlPrompt.Dock = DockStyle.Bottom
         pnlPrompt.Height = 80
@@ -377,10 +294,11 @@ Public Class FormShopCardSection
         ' ── instruct line ───────────────────────────────────────────────
         lblInstruct.Dock = DockStyle.Bottom
         lblInstruct.Height = 24
-        lblInstruct.TextAlign = ContentAlignment.MiddleCenter
-        lblInstruct.ForeColor = Color.Yellow
+        lblInstruct.TextAlign = ContentAlignment.MiddleLeft
+        lblInstruct.Padding = New Padding(8, 0, 0, 0)
+        lblInstruct.ForeColor = Color.White
         lblInstruct.BackColor = Color.Black
-        lblInstruct.Font = New Font("Courier New", 10, FontStyle.Regular)
+        lblInstruct.Font = New Font("Courier New", 11, FontStyle.Regular)
         lblInstruct.Text = "*** Type Appropriate Letter ***"
         Me.Controls.Add(lblInstruct)
 
@@ -410,7 +328,7 @@ Public Class FormShopCardSection
             lbl.Top = y
             lbl.Left = 8
             lbl.Font = monoFont
-            lbl.ForeColor = Color.Yellow
+            lbl.ForeColor = Color.White
             lbl.BackColor = Color.Black
 
             If row.Kind = FieldKind.Spacer Then
@@ -423,7 +341,7 @@ Public Class FormShopCardSection
 
             ' highlight active field
             If _activeFieldIdx >= 0 AndAlso _rows(_activeFieldIdx) Is row Then
-                lbl.ForeColor = Color.White
+                lbl.ForeColor = Color.Yellow
             End If
 
             pnlBody.Controls.Add(lbl)
@@ -439,7 +357,7 @@ Public Class FormShopCardSection
         lblExit.Top = y + 4
         lblExit.Left = 8
         lblExit.Font = monoFont
-        lblExit.ForeColor = Color.Yellow
+        lblExit.ForeColor = Color.White
         lblExit.BackColor = Color.Black
         lblExit.Text = "(Z)  EXIT"
         pnlBody.Controls.Add(lblExit)
@@ -494,8 +412,15 @@ Public Class FormShopCardSection
         If row.Kind = FieldKind.YesToggle Then
             ' toggle YES / blank
             Dim cur = _record.GetSection(_sectionNum, row.FieldIndex)
-            _record.SetSection(_sectionNum, row.FieldIndex, If(cur = "YES", "", "YES"))
-            ' Anodize cross-fill: if Anodize (C/field 3) toggled YES, clear Type if blank is OK
+            Dim newVal = If(cur = "YES", "", "YES")
+            _record.SetSection(_sectionNum, row.FieldIndex, newVal)
+            ' DOS line 2350: Section 1, pressing I (Cetyl/field 9) when BOTH Cetyl and Other are empty
+            ' auto-fills Other (field 10) with "MIL-L-87132 Type1"
+            If _sectionNum = 1 AndAlso row.FieldIndex = 9 AndAlso newVal = "YES" Then
+                If _record.GetSection(1, 10) = "" Then
+                    _record.SetSection(1, 10, "MIL-L-87132 Type1")
+                End If
+            End If
             RenderRows()
         ElseIf row.Kind = FieldKind.TextEntry Then
             ActivatePrompt(idx)

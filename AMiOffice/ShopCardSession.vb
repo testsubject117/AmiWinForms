@@ -57,6 +57,70 @@ Friend Module ShopCardSession
     End Sub
 
     ''' <summary>
+    ''' Searches ALL bucket subfolders under SHOPCARD\ for a given card number,
+    ''' returning every matching file path found.
+    ''' This matches DOS TS (Text Search) behavior — it scanned every bucket
+    ''' regardless of the INT(n/200) formula, so all historical copies are visible.
+    ''' Callers receive all matches; no duplicate alerts are shown to the user.
+    ''' </summary>
+    Public Function FindCardFiles(cardNum As String) As List(Of String)
+        Dim results As New List(Of String)
+        Try
+            Dim shopcardRoot As String = IO.Path.Combine(DataFolder, "SHOPCARD")
+            If Not IO.Directory.Exists(shopcardRoot) Then Return results
+            Dim fileName As String = cardNum.Trim() & ".CRD"
+            ' Scan every subfolder (buckets 0-N) and the root itself
+            For Each folder As String In IO.Directory.GetDirectories(shopcardRoot)
+                Dim candidate As String = IO.Path.Combine(folder, fileName)
+                If IO.File.Exists(candidate) Then results.Add(candidate)
+            Next
+            ' Also check directly under SHOPCARD\ root (future flat writes)
+            Dim rootCandidate As String = IO.Path.Combine(shopcardRoot, fileName)
+            If IO.File.Exists(rootCandidate) Then results.Add(rootCandidate)
+        Catch
+        End Try
+        Return results
+    End Function
+
+    ''' <summary>
+    ''' Called at application startup. Reads crdnumbr.dat and compares it against
+    ''' the actual highest .CRD number present on disk. If the counter is behind
+    ''' (e.g. was reset or never advanced past a wrap), it is corrected silently
+    ''' so that new cards always append after all existing historical data.
+    ''' </summary>
+    Public Sub SeedCounterFromDisk()
+        Try
+            Dim shopcardRoot As String = IO.Path.Combine(DataFolder, "SHOPCARD")
+            If Not IO.Directory.Exists(shopcardRoot) Then Return
+
+            ' Find the highest numeric card number anywhere on disk
+            Dim highest As Integer = 0
+            For Each f As String In IO.Directory.GetFiles(shopcardRoot, "*.CRD", IO.SearchOption.AllDirectories)
+                Dim baseName As String = IO.Path.GetFileNameWithoutExtension(f)
+                Dim n As Integer
+                If Integer.TryParse(baseName, n) AndAlso n > highest Then highest = n
+            Next
+
+            If highest = 0 Then Return
+
+            ' Read the current counter
+            Dim crdPath As String = IO.Path.Combine(DataFolder, "crdnumbr.dat")
+            Dim current As Integer = 0
+            If IO.File.Exists(crdPath) Then
+                Dim raw As String = IO.File.ReadAllText(crdPath).Trim().Trim(""""c)
+                Integer.TryParse(raw, current)
+            End If
+
+            ' If counter is behind the highest card on disk, correct it
+            If current < highest Then
+                IO.File.WriteAllText(crdPath, """" & highest.ToString() & """" & vbCrLf)
+            End If
+        Catch
+            ' Non-fatal — worst case next card number is read from file as-is
+        End Try
+    End Sub
+
+    ''' <summary>
     ''' Returns the printer label string for display on the menu,
     ''' matching DOS: "Current Printer = STAR (Dot Matrix)" or "LASER"
     ''' </summary>

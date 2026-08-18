@@ -69,4 +69,14 @@ Public Class ShopCardRecord
         Return False
     End Function
 
+    ''' <summary>Copies all section data from another record into this one.</summary>
+    Public Sub CopySectionsFrom(source As ShopCardRecord)
+        If source Is Nothing Then Return
+        For s As Integer = 1 To 8
+            For f As Integer = 1 To 19
+                _sectionData(s, f) = source.GetSection(s, f)
+            Next
+        Next
+    End Sub
+
 End Class

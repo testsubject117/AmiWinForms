@@ -3,6 +3,7 @@ Option Explicit On
 
 Imports System
 Imports System.Drawing
+Imports System.Linq
 Imports System.Windows.Forms
 
 ''' <summary>
@@ -81,6 +82,8 @@ Public Class FormShopCardHeader
 
     Private Enum EntryStep
         CustomerName
+        CustomerNameNotFound   ' DOS line 670: "X does not exist... Would you like to see a list (Y/N)?"
+        CustomerNameList       ' DOS line 710: FILES "PRC\X*.PRC" then hit ENTER
         EntryDate
         PONumber
         NumberOfPans
@@ -102,6 +105,8 @@ Public Class FormShopCardHeader
     ' ── Constructor ──────────────────────────────────────────────────────────────
     Private _startStep As EntryStep = EntryStep.EntryDate
     Private _nameOnly As Boolean = False
+    Private _pendingBadName As String = ""  ' holds the rejected name for CustomerNameNotFound step
+    Private _justMode As Boolean = False
 
     Public Sub New()
         InitializeLayout()
@@ -133,6 +138,35 @@ Public Class FormShopCardHeader
         InitializeLayout()
         _record.CustomerName = customerName
         _startStep = EntryStep.EntryDate
+    End Sub
+
+    ''' <summary>
+    ''' Just (FAA) mode: carries forward all fields from the last card except Qty and Part#.
+    ''' DOS line 1110: skips date/PO/pans/weight — jumps straight to Quantity then PartNumber then Summary.
+    ''' DOS line 1400: carries JN$, MT$, HT$, A$(7,1), A$(7,2) from last card.
+    ''' DOS line 1800: HWC$="YES", then GOTO 2000 (summary).
+    ''' </summary>
+    Public Sub New(customerName As String, lastRecord As ShopCardRecord)
+        InitializeLayout()
+        _justMode = True
+        _startStep = EntryStep.Quantity
+        ' Carry forward all header fields from last card (DOS line 1110: D$=DATE$, PO$=PO22$)
+        _record.CustomerName = customerName
+        _record.EntryDate = DateTime.Today.ToString("MM-dd-yyyy")
+        _record.PONumber = If(lastRecord IsNot Nothing, lastRecord.PONumber, "")
+        _record.NumberOfPans = If(lastRecord IsNot Nothing, lastRecord.NumberOfPans, "")
+        _record.NumberOfBoxes = If(lastRecord IsNot Nothing, lastRecord.NumberOfBoxes, "")
+        _record.NumberOfCrates = If(lastRecord IsNot Nothing, lastRecord.NumberOfCrates, "")
+        _record.Weight = If(lastRecord IsNot Nothing, lastRecord.Weight, "")
+        _record.JobRouteNumber = If(lastRecord IsNot Nothing, lastRecord.JobRouteNumber, "")
+        _record.Material = If(lastRecord IsNot Nothing, lastRecord.Material, "")
+        _record.HeatTreat = If(lastRecord IsNot Nothing, lastRecord.HeatTreat, "")
+        _record.HotRush = If(lastRecord IsNot Nothing, lastRecord.HotRush, "")
+        _record.HandleWithCare = "YES"
+        ' Copy all section carry-forward from last card (DOS line 1400: A$(7,1), A$(7,2) etc.)
+        If lastRecord IsNot Nothing Then
+            _record.CopySectionsFrom(lastRecord)
+        End If
     End Sub
 
     ' ── Layout ───────────────────────────────────────────────────────────────────
@@ -219,6 +253,7 @@ Public Class FormShopCardHeader
         lblTranscript.Top = 108
         lblTranscript.Text = ""
         lblTranscript.UseCompatibleTextRendering = True
+        lblTranscript.UseMnemonic = False  ' prevent & from being eaten as a keyboard shortcut prefix
 
         ' Hint label — appears just above the active prompt
         lblHint.Font = New Font("Consolas", 10, FontStyle.Regular, GraphicsUnit.Point)
@@ -517,7 +552,7 @@ Public Class FormShopCardHeader
         lblPromptSuffix.Text = ""
         lblHint2.Visible = False
         ' Hide material confirm unless we are on HeatTreat or later (it stays visible once set)
-        If nextStep < EntryStep.HeatTreat Then lblMaterialConfirm.Visible = False
+        If nextStep < EntryStep.HeatTreat Then lblMaterialConfirm.Visible = False  ' stays visible from HeatTreat onward (ConditionReceived, HotRush, Summary)
 
         Select Case nextStep
             Case EntryStep.CustomerName
@@ -525,6 +560,26 @@ Public Class FormShopCardHeader
                 lblPrompt.Text = "Enter Customers Name" &
                     If(ShopCardSession.LastCustomerName <> "",
                        " [ENTER = " & ShopCardSession.LastCustomerName & "]", "") & "  ?"
+
+            Case EntryStep.CustomerNameNotFound
+                ' DOS line 670: "KIRKY does not exist...  Would you like to see a list (Y/N)?"
+                lblInputUnderline.Visible = False
+                txtInput.Visible = False
+                lblPrompt.ForeColor = Color.White
+                lblPrompt.Text = _pendingBadName & " does not exist...  Would you like to see a list (Y/N)?"
+
+            Case EntryStep.CustomerNameList
+                ' DOS line 710: show matching PRC file names, wait for ENTER
+                lblInputUnderline.Visible = False
+                txtInput.Visible = False
+                Dim letter As String = If(_pendingBadName.Length > 0, _pendingBadName.Substring(0, 1), "")
+                Dim listText As String = BuildPrcListText(letter)
+                ' Append formatted list to transcript (DOS terminal scroll analog)
+                ' Do NOT also set lblPrompt to the list — that causes double-render and overflows
+                AppendTranscript(listText)
+                AppendTranscript("Hit [ENTER]")
+                lblPrompt.ForeColor = Color.White
+                lblPrompt.Text = "Hit [ENTER] to continue"
 
             Case EntryStep.EntryDate
                 lblPrompt.ForeColor = Color.White
@@ -771,6 +826,31 @@ Public Class FormShopCardHeader
     Protected Overrides Sub OnKeyDown(e As KeyEventArgs)
         MyBase.OnKeyDown(e)
 
+        If _currentStep = EntryStep.CustomerNameNotFound Then
+            ' DOS line 680/690: Y -> show list, N -> back to name prompt; anything else loops
+            Dim ch As String = KeyCodeToChar(e.KeyCode).ToUpper()
+            Select Case ch
+                Case "Y"
+                    AppendTranscript("? Y")
+                    e.Handled = True
+                    ShowStep(EntryStep.CustomerNameList)
+                Case "N"
+                    AppendTranscript("? N")
+                    e.Handled = True
+                    ShowStep(EntryStep.CustomerName)
+            End Select
+            Return
+        End If
+
+        If _currentStep = EntryStep.CustomerNameList Then
+            ' DOS line 710: after list is shown, any ENTER returns to name prompt
+            If e.KeyCode = Keys.Return Then
+                e.Handled = True
+                ShowStep(EntryStep.CustomerName)
+            End If
+            Return
+        End If
+
         If _currentStep = EntryStep.HotRush Then
             Select Case e.KeyCode
                 Case Keys.Y
@@ -854,16 +934,43 @@ Public Class FormShopCardHeader
                     FlashPrompt("Please enter a customer name.")
                     Return
                 End If
-                _record.CustomerName = input
-                ShopCardSession.LastCustomerName = input
+                ' DOS line 380: validate customer name against PRC\NAME.PRC file
+                Dim prcPath As String = IO.Path.Combine(ShopCardSession.DataFolder, "PRC", input.ToUpper() & ".PRC")
+                If Not IO.File.Exists(prcPath) Then
+                    ' DOS line 670: name does not exist -> show Y/N prompt inline
+                    _pendingBadName = input.ToUpper()
+                    AppendTranscript("Enter Customers Name  ?  " & input.ToUpper())
+                    ShowStep(EntryStep.CustomerNameNotFound)
+                    Return
+                End If
+                _record.CustomerName = input.ToUpper()
+                ShopCardSession.LastCustomerName = input.ToUpper()
                 UpdateCustomerTag()
-                AppendTranscript("Enter Customers Name  ?  " & input)
+                AppendTranscript("Enter Customers Name  ?  " & input.ToUpper())
                 If _nameOnly Then
                     Me.DialogResult = DialogResult.OK
                     Me.Close()
                     Return
                 End If
                 ShowStep(EntryStep.EntryDate)
+
+            Case EntryStep.CustomerNameNotFound
+                ' DOS line 680/690: Y -> show list, N -> back to name prompt
+                Select Case input.ToUpper()
+                    Case "Y"
+                        AppendTranscript("? Y")
+                        ShowStep(EntryStep.CustomerNameList)
+                    Case "N"
+                        AppendTranscript("? N")
+                        ShowStep(EntryStep.CustomerName)
+                    Case Else
+                        ' Loop — no action, stay on this step
+                End Select
+
+            Case EntryStep.CustomerNameList
+                ' DOS line 710: after ENTER, return to name prompt
+                AppendTranscript("")
+                ShowStep(EntryStep.CustomerName)
 
             Case EntryStep.EntryDate
                 If input.ToUpper() = "C" Then
@@ -932,7 +1039,16 @@ Public Class FormShopCardHeader
                 End If
                 _record.PartNumberAndName = input
                 AppendTranscript("Enter Part# & name  ?  " & input)
-                ShowStep(EntryStep.JobRoute)
+                ' DOS line 1460: IF JUST=1 THEN 1800 — skip JobRoute/Material/HeatTreat/HotRush, go to summary
+                If _justMode Then
+                    ' DOS line 1450: if last Mag/Pene A$(7,2) exists, replace with new QR$
+                    If _record.GetSection(7, 2) <> "" Then
+                        _record.SetSection(7, 2, _record.QuantityReceived)
+                    End If
+                    ShowStep(EntryStep.Summary)
+                Else
+                    ShowStep(EntryStep.JobRoute)
+                End If
 
             Case EntryStep.JobRoute
                 ' Append job/route to part number if entered
@@ -1047,6 +1163,37 @@ Public Class FormShopCardHeader
                            End Sub
         t.Start()
     End Sub
+
+    ''' <summary>
+    ''' Builds the PRC list text for CustomerNameList step.
+    ''' DOS line 710: FILES "PRC\" + LEFT$(N2$,1) + "*.PRC"
+    ''' </summary>
+    ''' <summary>
+    ''' Builds the PRC customer list formatted like DOS GW-BASIC FILES output:
+    ''' 4 columns, each 16 chars wide (name padded with spaces), wrapped to new rows.
+    ''' Includes .PRC extension to match DOS display exactly.
+    ''' DOS line 710: FILES "PRC\" + LEFT$(N2$,1) + "*.PRC"
+    ''' </summary>
+    Private Function BuildPrcListText(letter As String) As String
+        Dim prcDir As String = IO.Path.Combine(ShopCardSession.DataFolder, "PRC")
+        If Not IO.Directory.Exists(prcDir) Then Return "(no matching customers found)"
+        Dim matches = IO.Directory.GetFiles(prcDir, letter.ToUpper() & "*.PRC") _
+                                  .Select(Function(f) IO.Path.GetFileName(f).ToUpper()) _
+                                  .OrderBy(Function(n) n) _
+                                  .ToArray()
+        If matches.Length = 0 Then Return "(no matching customers found)"
+        ' Format into 4-column grid, 16 chars wide per column — matches GW-BASIC FILES output
+        Const ColWidth As Integer = 16
+        Const ColsPerRow As Integer = 4
+        Dim rows As New System.Text.StringBuilder()
+        For i As Integer = 0 To matches.Length - 1
+            rows.Append(matches(i).PadRight(ColWidth))
+            If (i + 1) Mod ColsPerRow = 0 Then
+                rows.AppendLine()
+            End If
+        Next
+        Return rows.ToString().TrimEnd()
+    End Function
 
 End Class
 

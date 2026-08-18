@@ -84,7 +84,7 @@ Public Class FormShopCardSectionHub
     ''' </summary>
     Private Function SectionLabel(sectionNum As Integer, title As String) As String
         If SectionHasData(sectionNum) Then
-            Return "(" & Chr(10003) & ") " & title
+            Return "(" & ChrW(10003) & ") " & title
         End If
         Return title
     End Function
@@ -105,6 +105,7 @@ Public Class FormShopCardSectionHub
             frm.ShowDialog(Me)
         End Using
         BuildMenu()   ' refresh checkmarks after returning
+        ResizeButtonsToPanel(flpLeft)
     End Sub
 
     Private Sub LaunchSerialNumbers()
@@ -121,13 +122,11 @@ Public Class FormShopCardSectionHub
     End Sub
 
     Private Sub LaunchPrint()
-        If Not _record.HasAnyProcedure() Then
-            MessageBox.Show("You must enter at least 1 procedure before printing." & vbCrLf &
-                            "Please fill in at least one section (1-8).",
-                            "ShopCard", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-            Return
-        End If
-        MessageBox.Show("Print ShopCard — Not yet implemented.", "ShopCard", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        ' DOS line 2190: P -> GOTO 4300 immediately, no validation on the hub.
+        ' Close with OK so the caller (FormShopCardMenu.RunSaveScreen) runs the
+        ' write-to-disk + print instruction screens.
+        Me.DialogResult = DialogResult.OK
+        Me.Close()
     End Sub
 
 End Class
