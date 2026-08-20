@@ -36,8 +36,53 @@ Public Class DosMessageBox
         Show(owner, message, title, MessageBoxButtons.OK)
     End Sub
 
+    Private _buttons As MessageBoxButtons
+
     Private Sub New(message As String, title As String, buttons As MessageBoxButtons)
+        _buttons = buttons
         InitializeComponent(message, title, buttons)
+        Me.KeyPreview = True
+        AddHandler Me.KeyPress, AddressOf OnDosKeyPress
+    End Sub
+
+    Private Sub OnDosKeyPress(sender As Object, e As KeyPressEventArgs)
+        Dim ch = Char.ToUpperInvariant(e.KeyChar)
+        Select Case _buttons
+            Case MessageBoxButtons.YesNo
+                If ch = "Y"c Then
+                    e.Handled = True
+                    _result = DialogResult.Yes
+                    Me.Close()
+                ElseIf ch = "N"c Then
+                    e.Handled = True
+                    _result = DialogResult.No
+                    Me.Close()
+                End If
+            Case MessageBoxButtons.OKCancel
+                If ch = "Y"c OrElse e.KeyChar = ChrW(13) Then
+                    e.Handled = True
+                    _result = DialogResult.OK
+                    Me.Close()
+                ElseIf ch = "N"c OrElse e.KeyChar = ChrW(27) Then
+                    e.Handled = True
+                    _result = DialogResult.Cancel
+                    Me.Close()
+                End If
+            Case MessageBoxButtons.YesNoCancel
+                If ch = "Y"c Then
+                    e.Handled = True
+                    _result = DialogResult.Yes
+                    Me.Close()
+                ElseIf ch = "N"c Then
+                    e.Handled = True
+                    _result = DialogResult.No
+                    Me.Close()
+                ElseIf e.KeyChar = ChrW(27) Then
+                    e.Handled = True
+                    _result = DialogResult.Cancel
+                    Me.Close()
+                End If
+        End Select
     End Sub
 
     Private Sub InitializeComponent(message As String, title As String, buttons As MessageBoxButtons)

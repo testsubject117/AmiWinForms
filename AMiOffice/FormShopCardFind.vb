@@ -100,6 +100,8 @@ Public Class FormShopCardFind
         _inputPanel.Controls.Add(_inputBox)
         Me.Controls.Add(_inputPanel)
 
+        AddHandler Me.Activated, AddressOf OnFormActivated
+
         ' Flash timer for match highlights
         _flashTimer = New System.Windows.Forms.Timer() With {.Interval = 500}
         AddHandler _flashTimer.Tick, AddressOf FlashTick
@@ -306,14 +308,22 @@ Public Class FormShopCardFind
             End Try
             Return
         End If
-        _output.AppendText(promptText)   ' no newline yet — Y/N will follow inline
+        _output.AppendText(Environment.NewLine & promptText)   ' prompt on its own line
         _output.ScrollToCaret()
-        _prompt.Text = ""
-        _inputBox.Location = New Point(4, 5)
+        _prompt.Text = promptText
+        _prompt.Location = New Point(4, 5)
+        _inputBox.Location = New Point(_prompt.PreferredWidth + 8, 5)
         _inputBox.Visible = True
         _inputPanel.Visible = True
         _inputBox.Focus()
         _yesNoReady.Reset()
+    End Sub
+
+    Private Sub OnFormActivated(sender As Object, e As EventArgs)
+        ' When form regains focus while waiting for Y/N, redirect focus to the input box
+        If _inputBox IsNot Nothing AndAlso _inputBox.Visible Then
+            _inputBox.Focus()
+        End If
     End Sub
 
     Private Function WaitForYesNo() As Char
@@ -359,6 +369,24 @@ Public Class FormShopCardFind
             Me.Close()
             Return
         End If
+
+        ' Handle Y/N at form level so focus loss never breaks input
+        If _inputBox IsNot Nothing AndAlso _inputBox.Visible Then
+            If e.KeyCode = Keys.Y Then
+                e.SuppressKeyPress = True
+                e.Handled = True
+                _yesNoReply = "Y"c
+                _yesNoReady.Set()
+                Return
+            ElseIf e.KeyCode = Keys.N Then
+                e.SuppressKeyPress = True
+                e.Handled = True
+                _yesNoReply = "N"c
+                _yesNoReady.Set()
+                Return
+            End If
+        End If
+
         MyBase.OnKeyDown(e)
     End Sub
 

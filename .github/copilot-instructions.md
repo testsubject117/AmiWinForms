@@ -26,3 +26,6 @@
 ## Maintenance Scheduling
 - Schedule updates for Windows, BitDefender, and PiKVM on the production floor's 5 machines for the next available day after 2026-08-11.
 - Production backups for 2026-08-11 are already completed (done ~12:50 PM, took ~0.75 hrs).
+
+## Build Management
+- Always ask the user for approval before running a build (run_build). Do not build automatically after making code changes.
