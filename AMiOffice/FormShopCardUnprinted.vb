@@ -149,7 +149,7 @@ Public Class FormShopCardUnprinted
                             If (attrs And FileAttributes.Archive) = FileAttributes.Archive Then
                                 Dim lastWrite As DateTime = File.GetLastWriteTime(f)
                                 If lastWrite <= cutoff Then
-                                    list.Add(ReadCardHeader(f))
+                                    list.Add(ReadCardHeader(f, lastWrite))
                                 End If
                             End If
                         Catch
@@ -235,21 +235,31 @@ Public Class FormShopCardUnprinted
     End Sub
 
     ' -- Read first few lines of a .CRD file ----------------------------------
-    Private Function ReadCardHeader(filePath As String) As UnprintedCard
+    ' DOS CRD format (S.ASC lines 4470-4480):
+    '   Line 0: CustomerName (N2$)
+    '   Line 1: PartNumberAndName (PNN$)
+    '   Line 2: PONumber (PO$)
+    '   Line 3: HeatTreat (HT$)
+    '   Line 4: Material (MT$)
+    '   Line 5: NumberOfPans (PAN$)
+    '   Line 6: NumberOfBoxes (BX$)
+    '   Line 7: Weight (WT$)
+    '   Line 8: QR$ (mag/pene qty)
+    '   Line 9: QuantityReceived (QTYREC$)
+    '   Line 10: 0
+    '   Line 11: 0
+    '   Line 12: JobRouteNumber (JN$)
+    '   Then sparse triplets for sections, then -1/-1/SER$ if present.
+    '   EntryDate is NOT stored in the file -- DOS uses file LastWriteTime.
+    Private Function ReadCardHeader(filePath As String, fileDate As DateTime) As UnprintedCard
         Dim card As New UnprintedCard()
         card.CardNumber = Path.GetFileNameWithoutExtension(filePath)
+        card.EntryDate = fileDate.ToString("MM-dd-yyyy")
         Try
             Dim lines = File.ReadAllLines(filePath)
-            ' CRD format (from FormShopCardSave.WriteShopCardFile):
-            ' Line 0: "CustomerName"
-            ' Line 1: "EntryDate"
-            ' Line 2: "PONumber"
-            ' Lines 3+: other fields
-            ' Line 7: "PartNumberAndName"
             If lines.Length > 0 Then card.CustomerName = lines(0).Trim(""""c)
-            If lines.Length > 1 Then card.EntryDate = lines(1).Trim(""""c)
+            If lines.Length > 1 Then card.PartNumberAndName = lines(1).Trim(""""c)
             If lines.Length > 2 Then card.PONumber = lines(2).Trim(""""c)
-            If lines.Length > 7 Then card.PartNumberAndName = lines(7).Trim(""""c)
         Catch
         End Try
         Return card

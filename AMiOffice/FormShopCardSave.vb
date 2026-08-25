@@ -186,29 +186,62 @@ Public Class FormShopCardSave
     Private Sub WriteShopCardFile(cardNum As String, record As ShopCardRecord)
         Try
             Dim num As Integer = Integer.Parse(cardNum)
-            ' DOS line 4400: CDN2$ = STR$(INT(TMP/200)) — bucket subfolder
-            Dim bucket As Integer = num \ 200
+            ' DOS line 4400: CDN2$ = STR$(INT(TMP/400)) — bucket subfolder
+            Dim bucket As Integer = num \ 400
             Dim folder As String = Path.Combine(ShopCardSession.DataFolder, "SHOPCARD", bucket.ToString())
             Directory.CreateDirectory(folder)
             Dim filePath As String = Path.Combine(folder, cardNum & ".CRD")
 
             Using sw As New StreamWriter(filePath, False)
-                ' Write header fields matching DOS WRITE #1 sequence (lines 4460-4540)
+                ' DOS WRITE #1 sequence (S.ASC lines 4470-4525) -- must match exactly.
+                ' Line 0:  N2$     = CustomerName
+                ' Line 1:  PNN$    = PartNumberAndName
+                ' Line 2:  PO$     = PONumber
+                ' Line 3:  HT$     = HeatTreat
+                ' Line 4:  MT$     = Material
+                ' Line 5:  PAN$    = NumberOfPans
+                ' Line 6:  BX$     = NumberOfBoxes
+                ' Line 7:  WT$     = Weight
+                ' Line 8:  QR$     = A$(7,1) if set else A$(7,2)  (mag/pene qty)
+                ' Line 9:  QTYREC$ = QuantityReceived
+                ' Line 10: 0  (placeholder numeric)
+                ' Line 11: 0  (placeholder numeric)
+                ' Line 12: JN$     = JobRouteNumber
+                ' Then sparse triplets: X, Y, A$(X,Y) for each non-empty section field.
+                ' Then -1, -1, SER$ if SerialNumbers non-empty.
+                ' NOTE: EntryDate is NOT stored -- DOS uses file LastWriteTime for age.
                 sw.WriteLine("""" & record.CustomerName & """")
-                sw.WriteLine("""" & record.EntryDate & """")
+                sw.WriteLine("""" & record.PartNumberAndName & """")
                 sw.WriteLine("""" & record.PONumber & """")
+                sw.WriteLine("""" & record.HeatTreat & """")
+                sw.WriteLine("""" & record.Material & """")
                 sw.WriteLine("""" & record.NumberOfPans & """")
                 sw.WriteLine("""" & record.NumberOfBoxes & """")
                 sw.WriteLine("""" & record.Weight & """")
+                Dim qr As String = record.GetSection(7, 1)
+                If qr = "" Then qr = record.GetSection(7, 2)
+                sw.WriteLine("""" & qr & """")
                 sw.WriteLine("""" & record.QuantityReceived & """")
-                sw.WriteLine("""" & record.PartNumberAndName & """")
+                sw.WriteLine("0")
+                sw.WriteLine("0")
                 sw.WriteLine("""" & record.JobRouteNumber & """")
-                sw.WriteLine("""" & record.Material & """")
-                sw.WriteLine("""" & record.HeatTreat & """")
-                sw.WriteLine("""" & record.ConditionReceived & """")
-                sw.WriteLine("""" & record.HotRush & """")
-                sw.WriteLine("""" & record.HandleWithCare & """")
-                ' TODO: write sections 1-8 fields here during section parity pass
+                ' Sparse section triplets: X (numeric), Y (numeric), value (quoted string)
+                For x As Integer = 1 To 8
+                    For y As Integer = 1 To 19
+                        Dim val As String = record.GetSection(x, y)
+                        If val <> "" Then
+                            sw.WriteLine(x.ToString())
+                            sw.WriteLine(y.ToString())
+                            sw.WriteLine("""" & val & """")
+                        End If
+                    Next
+                Next
+                ' Serial numbers -- DOS line 4525: -1, -1, SER$
+                If record.SerialNumbers <> "" Then
+                    sw.WriteLine("-1")
+                    sw.WriteLine("-1")
+                    sw.WriteLine("""" & record.SerialNumbers & """")
+                End If
             End Using
         Catch ex As Exception
             ' Non-fatal — log and continue to print instruction screen

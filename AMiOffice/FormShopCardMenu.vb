@@ -146,8 +146,8 @@ Public Class FormShopCardMenu
         If cardNumStr.Trim() = "" Then Return
         Dim cardNum As Integer
         If Not Integer.TryParse(cardNumStr.Trim(), cardNum) OrElse cardNum < 1 OrElse cardNum > 1999 Then Return
-        ' DOS line 94: bucket = INT(cardNum / 200)
-        Dim bucket As Integer = cardNum \ 200
+        ' DOS line 4400: bucket = INT(cardNum / 400)
+        Dim bucket As Integer = cardNum \ 400
         Dim crdFile As String = System.IO.Path.Combine(ShopCardSession.DataFolder, "SHOPCARD", bucket.ToString(), cardNum.ToString() & ".CRD")
         If Not System.IO.File.Exists(crdFile) Then
             MessageBox.Show("Shopcard #" & cardNum.ToString() & " not found.", "ShopCard", MessageBoxButtons.OK, MessageBoxIcon.Warning)
