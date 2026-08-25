@@ -145,7 +145,7 @@ Public Class FormShopCardMenu
     Private Sub LaunchModifyShopCard(cardNumStr As String)
         If cardNumStr.Trim() = "" Then Return
         Dim cardNum As Integer
-        If Not Integer.TryParse(cardNumStr.Trim(), cardNum) OrElse cardNum < 1 OrElse cardNum > 1999 Then Return
+        If Not Integer.TryParse(cardNumStr.Trim(), cardNum) OrElse cardNum < 1 OrElse cardNum > 999999 Then Return
         ' DOS line 4400: bucket = INT(cardNum / 400)
         Dim bucket As Integer = cardNum \ 400
         Dim crdFile As String = System.IO.Path.Combine(ShopCardSession.DataFolder, "SHOPCARD", bucket.ToString(), cardNum.ToString() & ".CRD")
