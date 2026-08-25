@@ -88,13 +88,9 @@ Public Class FormShopCardMenu
 
         AddMenuButton(p, "J", "Just Enter Quantity & Part# For FAA", Sub() LaunchJustFAA())
 
-        AddMenuButton(p, "U", "View Shopcards That Have Not Been Printed As Invoices", Sub()
-                                                                                            MessageBox.Show("View Unprinted — Not yet implemented.", "ShopCard", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                                                                                        End Sub)
+        AddMenuButton(p, "V", "View Shopcards That Have Not Been Printed As Invoices", Sub() LaunchViewUnprinted())
 
-        AddMenuButton(p, "D", "Delete/Void A Shopcard", Sub()
-                                                             MessageBox.Show("Delete/Void — Not yet implemented.", "ShopCard", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                                                         End Sub)
+        AddMenuButton(p, "D", "Delete/Void A Shopcard", Sub() LaunchDeleteVoid())
 
         AddMenuButton(p, "Q", "Quit", Sub() Me.Close())
     End Sub
@@ -291,6 +287,22 @@ Public Class FormShopCardMenu
         ShopCardSession.UseLaserPrinter = Not ShopCardSession.UseLaserPrinter
         BuildMenu()
         TightenButtons()
+    End Sub
+
+    Private Sub LaunchViewUnprinted()
+        Using frm As New FormShopCardUnprinted()
+            frm.ShowDialog(Me)
+        End Using
+        Me.Focus()
+        Me.Activate()
+    End Sub
+
+    Private Sub LaunchDeleteVoid()
+        Using frm As New FormShopCardDelete()
+            frm.ShowDialog(Me)
+        End Using
+        Me.Focus()
+        Me.Activate()
     End Sub
 
     Private Sub TightenButtons()
