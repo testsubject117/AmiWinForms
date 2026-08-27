@@ -364,7 +364,7 @@ Public Class DosMenuFormBase
         End If
     End Sub
 
-    Protected Sub UpdateHeaderClock()
+    Protected Overridable Sub UpdateHeaderClock()
         Dim now As DateTime = DateTime.Now
         Dim datePart As String = now.ToString("MM-dd-yyyy")
         Dim timePart As String = now.ToString("HH:mm")

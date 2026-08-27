@@ -8,34 +8,28 @@ Imports System.Windows.Forms
 
 ''' <summary>
 ''' DOS-parity ShopCard Delete/Void screen.
-''' Mirrors S2.BAS lines 9999+:
-'''   - Shows last card number as reference
-'''   - Prompts for card # to void  ([Enter] = Quit)
-'''   - Finds the .CRD file, clears its archive bit (ATTRIB -A equivalent)
-'''   - Shows "SHOPCARD #nnn WAS VOIDED." then loops back for another entry
-''' The file is NOT physically deleted -- only the archive bit is cleared,
-''' which is exactly what the DOS ATTRIB -A command did.
+''' Mirrors S2.BAS lines 9999+: prompts for card number, confirms, then clears
+''' the archive bit (ATTRIB -A equivalent). File is NOT physically deleted.
+''' All input captured at form level via KeyPreview so clicking the output
+''' area never breaks input.
 ''' </summary>
 Public Class FormShopCardDelete
     Inherits Form
 
     ' -- UI -------------------------------------------------------------------
     Private _output As RichTextBox
-    Private _inputPanel As Panel
-    Private _prompt As Label
-    Private _inputBox As TextBox
 
     ' -- State ----------------------------------------------------------------
     Private _phase As VoidPhase = VoidPhase.PromptCardNumber
+    Private _inputBuffer As String = ""
+    Private _pendingCardNum As String = ""
+    Private _pendingFilePath As String = ""
 
     Private Enum VoidPhase
         PromptCardNumber
         PromptConfirm
         Done
     End Enum
-
-    Private _pendingCardNum As String = ""
-    Private _pendingFilePath As String = ""
 
     ' -- Constructor ----------------------------------------------------------
     Public Sub New()
@@ -62,58 +56,85 @@ Public Class FormShopCardDelete
             .ReadOnly = True,
             .ScrollBars = RichTextBoxScrollBars.Vertical,
             .BorderStyle = BorderStyle.None,
-            .WordWrap = False
+            .WordWrap = False,
+            .Cursor = Cursors.Arrow
         }
 
-        _inputPanel = New Panel() With {
-            .Dock = DockStyle.Bottom,
-            .Height = 30,
-            .BackColor = Color.Black
-        }
+        ' Prevent clicks from moving the caret or stealing focus from the form
+        AddHandler _output.MouseDown, Sub(s, e) Me.Focus()
 
-        _prompt = New Label() With {
-            .AutoSize = False,
-            .Width = 600,
-            .Height = 24,
-            .Location = New Point(4, 4),
-            .BackColor = Color.Black,
-            .ForeColor = Color.Yellow,
-            .Font = New Font("Courier New", 10, FontStyle.Regular),
-            .TextAlign = ContentAlignment.MiddleLeft
-        }
-
-        _inputBox = New TextBox() With {
-            .Width = 120,
-            .Height = 22,
-            .Location = New Point(610, 4),
-            .BackColor = Color.Black,
-            .ForeColor = Color.Yellow,
-            .Font = New Font("Courier New", 10, FontStyle.Regular),
-            .BorderStyle = BorderStyle.None,
-            .MaxLength = 6
-        }
-
-        _inputPanel.Controls.Add(_prompt)
-        _inputPanel.Controls.Add(_inputBox)
         Me.Controls.Add(_output)
-        Me.Controls.Add(_inputPanel)
-
-        AddHandler _inputBox.KeyDown, AddressOf InputBox_KeyDown
     End Sub
 
     ' -- Shown ----------------------------------------------------------------
     Protected Overrides Sub OnShown(e As EventArgs)
         MyBase.OnShown(e)
+        Me.Focus()
         ShowCardNumberPrompt()
     End Sub
 
-    ' -- Input handler --------------------------------------------------------
-    Private Sub InputBox_KeyDown(sender As Object, e As KeyEventArgs)
-        If e.KeyCode <> Keys.Enter Then Return
-        e.SuppressKeyPress = True
-        Dim val As String = _inputBox.Text.Trim()
-        _inputBox.Clear()
+    ' -- Form-level key capture -----------------------------------------------
+    Protected Overrides Sub OnKeyDown(e As KeyEventArgs)
+        If _phase = VoidPhase.Done Then Return
 
+        Select Case e.KeyCode
+            Case Keys.Enter
+                e.SuppressKeyPress = True
+                Dim val As String = _inputBuffer.Trim()
+                _inputBuffer = ""
+                ProcessInput(val)
+
+            Case Keys.Back
+                If _inputBuffer.Length > 0 Then
+                    _inputBuffer = _inputBuffer.Substring(0, _inputBuffer.Length - 1)
+                    ' Remove exactly the last character from the display
+                    If _output.TextLength > 0 Then
+                        _output.SelectionStart = _output.TextLength - 1
+                        _output.SelectionLength = 1
+                        _output.SelectedText = ""
+                    End If
+                End If
+                e.SuppressKeyPress = True
+
+            Case Keys.Escape
+                _phase = VoidPhase.Done
+                Me.DialogResult = DialogResult.OK
+                Me.Close()
+        End Select
+
+        MyBase.OnKeyDown(e)
+    End Sub
+
+    Protected Overrides Sub OnKeyPress(e As KeyPressEventArgs)
+        If _phase = VoidPhase.Done Then Return
+        Dim c As Char = e.KeyChar
+        If Not Char.IsControl(c) Then
+            _inputBuffer &= c
+            ' Append the single character at the end — no backward selection needed
+            _output.SelectionStart = _output.TextLength
+            _output.SelectionLength = 0
+            _output.SelectionFont = New Font("Courier New", 10, FontStyle.Regular)
+            _output.SelectionColor = Color.Yellow
+            _output.AppendText(c.ToString())
+            _output.ScrollToCaret()
+            e.Handled = True
+        End If
+        MyBase.OnKeyPress(e)
+    End Sub
+
+    Private Function GetCurrentPromptText() As String
+        Select Case _phase
+            Case VoidPhase.PromptCardNumber
+                Return "  Shopcard # to Delete/Void  [Enter = Quit]? "
+            Case VoidPhase.PromptConfirm
+                Return "  Void Shopcard #" & _pendingCardNum & "?  (Y/N) [Enter = No]? "
+            Case Else
+                Return ""
+        End Select
+    End Function
+
+    ' -- Route input ----------------------------------------------------------
+    Private Sub ProcessInput(val As String)
         Select Case _phase
             Case VoidPhase.PromptCardNumber
                 HandleCardNumberEntry(val)
@@ -122,25 +143,26 @@ Public Class FormShopCardDelete
         End Select
     End Sub
 
-    ' -- Phase: ask for card number -------------------------------------------
+    ' -- Phase: card number prompt --------------------------------------------
     Private Sub ShowCardNumberPrompt()
         _phase = VoidPhase.PromptCardNumber
+        _inputBuffer = ""
         AppendLine("", Color.Yellow)
 
-        ' Show last card number as reference (matches DOS "The last shopcard printed was X")
         Dim lastNum As String = ReadLastCardNumber()
         If lastNum <> "" Then
             AppendLine("  The last shopcard number used was " & lastNum, Color.White)
         End If
 
         AppendLine("", Color.Yellow)
-        SetPrompt("  Shopcard # to Delete/Void  [Enter = Quit]? ")
-        _inputBox.Focus()
+        AppendInline(GetCurrentPromptText(), Color.Yellow)
     End Sub
 
     Private Sub HandleCardNumberEntry(val As String)
+        AppendLine("", Color.Yellow)
+
         If val = "" Then
-            ' Enter with blank = quit
+            _phase = VoidPhase.Done
             Me.DialogResult = DialogResult.OK
             Me.Close()
             Return
@@ -153,7 +175,6 @@ Public Class FormShopCardDelete
             Return
         End If
 
-        ' Find the file
         Dim paths = ShopCardSession.FindCardFiles(val)
         If paths.Count = 0 Then
             AppendLine("  Shopcard #" & val & " not found.", Color.Red)
@@ -161,25 +182,22 @@ Public Class FormShopCardDelete
             Return
         End If
 
-        ' Use the first match (same as DOS)
         _pendingCardNum = val
         _pendingFilePath = paths(0)
 
-        ' Read and display the card header so user knows what they're voiding
-        AppendLine("", Color.Yellow)
         ShowCardSummary(_pendingFilePath, _pendingCardNum)
         AppendLine("", Color.Yellow)
 
         _phase = VoidPhase.PromptConfirm
-        SetPrompt("  Void Shopcard #" & _pendingCardNum & "?  (Y/N) [Enter = No]? ")
-        _inputBox.Focus()
+        _inputBuffer = ""
+        AppendInline(GetCurrentPromptText(), Color.Yellow)
     End Sub
 
     ' -- Phase: confirm void --------------------------------------------------
     Private Sub HandleConfirmEntry(val As String)
+        AppendLine("", Color.Yellow)
         If val.ToUpper() <> "Y" Then
             AppendLine("  Void cancelled.", Color.Cyan)
-            AppendLine("", Color.Yellow)
             ShowCardNumberPrompt()
             Return
         End If
@@ -188,11 +206,10 @@ Public Class FormShopCardDelete
         ShowCardNumberPrompt()
     End Sub
 
-    ' -- Perform the void (clear archive bit -- matches DOS ATTRIB -A) --------
+    ' -- Clear archive bit (ATTRIB -A equivalent) -----------------------------
     Private Sub VoidCard(filePath As String, cardNum As String)
         Try
             Dim attrs As FileAttributes = File.GetAttributes(filePath)
-            ' Clear the archive bit
             File.SetAttributes(filePath, attrs And Not FileAttributes.Archive)
             AppendLine("  SHOPCARD #" & cardNum & " WAS VOIDED.", Color.Green)
         Catch ex As Exception
@@ -201,10 +218,10 @@ Public Class FormShopCardDelete
         AppendLine("", Color.Yellow)
     End Sub
 
-    ' -- Show card header summary before confirming void ----------------------
+    ' -- Display card header before confirming --------------------------------
     Private Sub ShowCardSummary(filePath As String, cardNum As String)
         Try
-            Dim lines = File.ReadAllLines(filePath)
+            Dim lines() As String = File.ReadAllLines(filePath)
             Dim customer As String = If(lines.Length > 0, lines(0).Trim(""""c), "")
             Dim dateStr As String = If(lines.Length > 1, lines(1).Trim(""""c), "")
             Dim po As String = If(lines.Length > 2, lines(2).Trim(""""c), "")
@@ -220,17 +237,20 @@ Public Class FormShopCardDelete
     End Sub
 
     ' -- Helpers --------------------------------------------------------------
-    Private Sub SetPrompt(text As String)
-        _prompt.Text = text
-        _prompt.Width = TextRenderer.MeasureText(text, _prompt.Font).Width + 4
-        _inputBox.Left = _prompt.Left + _prompt.Width + 4
-    End Sub
-
     Private Sub AppendLine(text As String, color As Color)
         _output.SelectionStart = _output.TextLength
         _output.SelectionLength = 0
         _output.SelectionColor = color
         _output.AppendText(text & vbCrLf)
+        _output.SelectionColor = _output.ForeColor
+        _output.ScrollToCaret()
+    End Sub
+
+    Private Sub AppendInline(text As String, color As Color)
+        _output.SelectionStart = _output.TextLength
+        _output.SelectionLength = 0
+        _output.SelectionColor = color
+        _output.AppendText(text)
         _output.SelectionColor = _output.ForeColor
         _output.ScrollToCaret()
     End Sub

@@ -22,6 +22,7 @@
 ## Environment Management
 - When referring to the DOS environment for screenshots or testing, use Hyper-V VMs instead of DOSBox.
 - Word exists and runs correctly on the DOS VM at \word2\word. Do NOT suggest "Word might be missing" as a cause for the (E) password failure — this has been confirmed and the user finds it frustrating to keep hearing it.
+- The DOS invoice VM clock is frequently one day ahead — this is known behavior. Do not flag the DOS VM date being ahead as a bug or investigate it. The original DOS app had a clock-sync routine that compared workstation clocks to the invoice machine and offered to correct them before loading the main menu. This is NOT needed in the VB/Windows app.
 
 ## Maintenance Scheduling
 - Schedule updates for Windows, BitDefender, and PiKVM on the production floor's 5 machines for the next available day after 2026-08-11.

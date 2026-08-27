@@ -365,7 +365,9 @@ Partial Public Class FormMainMenu
                 End Using
 
             Case "B"
-                NotYet("Invoice Generator")
+                Using frm As New FormInvoiceMenu()
+                    frm.ShowDialog(Me)
+                End Using
 
             Case "C"
                 Using f As New FormLedgerMenu()
