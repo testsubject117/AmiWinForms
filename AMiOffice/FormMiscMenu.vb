@@ -11,7 +11,7 @@ Partial Public Class FormMiscMenu
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
 
-        SetMenuTitle("MISC. MENU (FUTURE USE)")
+        SetMenuTitle("MISCELLANEOUS REPORTS")
 
         ShowVersionInHeader = False
         UpdateHeaderClock()
@@ -41,12 +41,28 @@ Partial Public Class FormMiscMenu
                                                                           Dim testForm As New FormMessageBoxTest()
                                                                           testForm.ShowDialog(Me)
                                                                       End Sub)
-        AddMenuButton(p, "A", "Placeholder Item A - Not Yet Implemented", Sub()
-                                                                              NotYet("Placeholder Item A")
-                                                                          End Sub)
-        AddMenuButton(p, "B", "Placeholder Item B - Not Yet Implemented", Sub()
-                                                                              NotYet("Placeholder Item B")
-                                                                          End Sub)
+        AddMenuButton(p, "A", "Invoice Register (Sales 2021–Present)", Sub()
+                                                                             ShowInlinePasswordPrompt("Password: ", Sub(pw As String)
+                                                                                                                       If pw = "ACTIVE" Then
+                                                                                                                           Using frm As New FormMiscInvoiceRegister()
+                                                                                                                               frm.ShowDialog(Me)
+                                                                                                                           End Using
+                                                                                                                       Else
+                                                                                                                           DosMessageBox.Show(Me, "Incorrect password.", "Access Denied")
+                                                                                                                       End If
+                                                                                                                   End Sub)
+                                                                         End Sub)
+        AddMenuButton(p, "B", "Disbursement Listing (Checks 2021–Present)", Sub()
+                                                                                 ShowInlinePasswordPrompt("Password: ", Sub(pw As String)
+                                                                                                                            If pw = "ACTIVE" Then
+                                                                                                                                Using frm As New FormMiscDisbursements()
+                                                                                                                                    frm.ShowDialog(Me)
+                                                                                                                                End Using
+                                                                                                                            Else
+                                                                                                                                DosMessageBox.Show(Me, "Incorrect password.", "Access Denied")
+                                                                                                                            End If
+                                                                                                                        End Sub)
+                                                                             End Sub)
         AddMenuButton(p, "C", "Placeholder Item C - Not Yet Implemented", Sub()
                                                                               NotYet("Placeholder Item C")
                                                                           End Sub)
